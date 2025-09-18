@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Создать событие [{{ role_name }}] - {{ guild.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card bg-dark text-light">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">🎮 Управление событиями</h4>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-success">{{ role_name }}</span>
+                        <span class="badge bg-info">{{ guild.name }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success" role="alert">
+                        <i class="bi bi-star-fill"></i>
+                        <strong>Особые права:</strong> Как участник с ролью <strong>{{ role_name }}</strong>, 
+                        вы можете создавать и управлять своими событиями через эту страницу.
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Мои события -->
+                    {% if user_events %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-secondary">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Мои события</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        {% for event in user_events %}
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="card bg-dark h-100">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title text-truncate">{{ event.title }}</h6>
+                                                    <p class="card-text small text-muted mb-2">
+                                                        {% if event.time %}
+                                                            <i class="bi bi-clock"></i> {{ event.time }}
+                                                        {% else %}
+                                                            <i class="bi bi-calendar"></i> Без времени
+                                                        {% endif %}
+                                                    </p>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="badge {{ 'bg-success' if not event.stopped else 'bg-secondary' }}">
+                                                            {{ 'Активно' if not event.stopped else 'Завершено' }}
+                                                        </span>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <a href="/guild/{{ guild.id }}/events/{{ event.id }}" 
+                                                               class="btn btn-outline-primary btn-sm">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                            {% if not event.stopped %}
+                                                            <a href="/guild/{{ guild.id }}/events/{{ event.id }}/edit" 
+                                                               class="btn btn-outline-warning btn-sm">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </a>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Форма создания нового события -->
+                    <div class="card bg-secondary">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Создать новое событие</h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ url_for('create_event_role', guild_id=guild.id, role_id=role_id) }}" method="post" id="eventForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="channel_id" class="form-label">
+                                            <i class="bi bi-hash"></i> Канал для события *
+                                        </label>
+                                        <select class="form-select bg-dark text-light border-secondary" id="channel_id" name="channel_id" required>
+                                            <option value="">Выберите канал...</option>
+                                            {% for channel in channels %}
+                                                <option value="{{ channel.id }}">{{ channel.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="template_select" class="form-label">
+                                            <i class="bi bi-lightning"></i> Быстрый шаблон
+                                        </label>
+                                        <select class="form-select bg-dark text-light border-secondary" id="template_select">
+                                            <option value="">Выберите шаблон (опционально)...</option>
+                                            {% for template_name, template_data in templates.items() %}
+                                                <option value="{{ template_name }}" 
+                                                        data-title="{{ template_data.title or template_name }}"
+                                                        data-description="{{ template_data.description or '' }}"
+                                                        data-roles="{{ template_data.roles | join('\n') if template_data.roles else '' }}">
+                                                    {{ template_name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">
+                                        <i class="bi bi-type"></i> Название события *
+                                    </label>
+                                    <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                           id="title" name="title" required maxlength="100"
+                                           placeholder="Например: Рейд в подземелье или Турнир по PvP">
+                                    <small class="text-muted">Будет отображаться как: [{{ role_name }}] Ваше название</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">
+                                        <i class="bi bi-card-text"></i> Описание
+                                    </label>
+                                    <textarea class="form-control bg-dark text-light border-secondary" 
+                                              id="description" name="description" rows="3"
+                                              placeholder="Дополнительная информация о событии, требования, награды..."></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="time" class="form-label">
+                                        <i class="bi bi-clock"></i> Время и дата
+                                    </label>
+                                    <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                           id="time" name="time"
+                                           placeholder="Например: 20:00, завтра в 15:00, пятница 19:00">
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="roles" class="form-label">
+                                        <i class="bi bi-people"></i> Роли участников *
+                                    </label>
+                                    <textarea class="form-control bg-dark text-light border-secondary" 
+                                              id="roles" name="roles" rows="4" required
+                                              placeholder="Танк&#10;Хилер&#10;ДД 1&#10;ДД 2&#10;ДД 3"></textarea>
+                                    <small class="text-muted">Каждая роль с новой строки</small>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="bi bi-plus-circle"></i> Создать событие
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Навигация -->
+                    <div class="mt-4">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад к панели
+                            </a>
+                            <a href="/guild/{{ guild.id }}/events" class="btn btn-outline-primary">
+                                <i class="bi bi-calendar"></i> Все события сервера
+                            </a>
+                            <a href="/guild/{{ guild.id }}/events/guest" class="btn btn-outline-info">
+                                <i class="bi bi-person-plus"></i> Гостевое создание
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Справка -->
+            <div class="card bg-dark text-light mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Ваши особые возможности</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-star-fill text-warning" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Особые права</h6>
+                            <p class="small text-muted">Доступ к расширенным возможностям благодаря роли {{ role_name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-calendar-plus text-success" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Создание событий</h6>
+                            <p class="small text-muted">Неограниченное создание и управление своими событиями</p>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-gear text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Управление</h6>
+                            <p class="small text-muted">Редактирование и остановка созданных вами событий</p>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-bookmark text-info" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Постоянный доступ</h6>
+                            <p class="small text-muted">Сохраните эту ссылку в закладки для быстрого доступа</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Автозаполнение из шаблонов
+document.getElementById('template_select').addEventListener('change', function() {
+    const option = this.options[this.selectedIndex];
+    if (option.value) {
+        document.getElementById('title').value = option.dataset.title || '';
+        document.getElementById('description').value = option.dataset.description || '';
+        document.getElementById('roles').value = option.dataset.roles || '';
+    }
+});
+
+// Предотвращение повторной отправки формы
+document.getElementById('eventForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Создание...';
+    
+    // Разблокировка через 5 секунд на случай ошибки
+    setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Создать событие';
+    }, 5000);
+});
+</script>
+{% endblock %}

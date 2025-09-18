@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ru" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Potatos Party Bot{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-neon: #00f5ff;
+            --secondary-neon: #ff007f;
+            --accent-blue: #0070f3;
+            --accent-purple: #7c3aed;
+            --dark-bg: #0a0a0a;
+            --dark-surface: #111111;
+            --dark-surface-2: #1a1a1a;
+            --dark-border: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --success-neon: #00ff88;
+            --warning-neon: #ffaa00;
+            --danger-neon: #ff3366;
+        }
+
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: var(--dark-bg);
+            background-image: 
+                radial-gradient(circle at 25% 25%, var(--accent-blue)20 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, var(--accent-purple)20 0%, transparent 50%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .navbar {
+            background: rgba(17, 17, 17, 0.95) !important;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--dark-border);
+            box-shadow: 0 4px 20px rgba(0, 245, 255, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-secondary) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-neon) !important;
+            text-shadow: 0 0 10px var(--primary-neon);
+        }
+
+        .nav-link.active {
+            color: var(--primary-neon) !important;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-neon), var(--secondary-neon));
+            border-radius: 1px;
+        }
+
+        .card {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid var(--dark-border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(0, 245, 255, 0.2);
+        }
+
+        .card-header {
+            background: rgba(0, 245, 255, 0.1);
+            border-bottom: 1px solid var(--dark-border);
+            border-radius: 20px 20px 0 0 !important;
+            font-weight: 600;
+        }
+
+        .btn {
+            border-radius: 12px;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--primary-neon));
+            box-shadow: 0 4px 15px rgba(0, 112, 243, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 112, 243, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, var(--success-neon));
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, var(--warning-neon));
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, var(--danger-neon));
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid var(--primary-neon);
+            color: var(--primary-neon);
+            background: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-neon);
+            color: var(--dark-bg);
+            box-shadow: 0 0 20px var(--primary-neon);
+        }
+
+        .btn-discord {
+            background: linear-gradient(135deg, #5865F2, #7289da);
+            box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
+        }
+
+        .btn-discord:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(88, 101, 242, 0.4);
+        }
+
+        .form-control, .form-select {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(26, 26, 26, 0.9);
+            border-color: var(--primary-neon);
+            box-shadow: 0 0 0 0.2rem rgba(0, 245, 255, 0.25);
+            color: var(--text-primary);
+        }
+
+        .alert {
+            border-radius: 15px;
+            border: none;
+            backdrop-filter: blur(20px);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-neon);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-neon);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .alert-info {
+            background: rgba(0, 245, 255, 0.2);
+            color: var(--primary-neon);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+        }
+
+        .table {
+            background: rgba(26, 26, 26, 0.6);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .table-dark {
+            background: rgba(26, 26, 26, 0.8);
+        }
+
+        .dropdown-menu {
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid var(--dark-border);
+            border-radius: 15px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .dropdown-item {
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(0, 245, 255, 0.1);
+            color: var(--primary-neon);
+        }
+
+        .bg-gradient {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+        }
+
+        .text-neon {
+            color: var(--primary-neon);
+            text-shadow: 0 0 10px var(--primary-neon);
+        }
+
+        .border-neon {
+            border-color: var(--primary-neon) !important;
+        }
+
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px var(--primary-neon);
+            }
+            to {
+                box-shadow: 0 0 20px var(--primary-neon), 0 0 30px var(--primary-neon);
+            }
+        }
+
+        .server-card {
+            transition: all 0.3s ease;
+            background: rgba(26, 26, 26, 0.7);
+        }
+
+        .server-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(0, 245, 255, 0.2);
+        }
+
+        .status-online {
+            color: var(--success-neon);
+            text-shadow: 0 0 10px var(--success-neon);
+        }
+
+        .status-offline {
+            color: var(--text-secondary);
+        }
+
+        .badge {
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .badge-neon {
+            background: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon));
+            color: var(--dark-bg);
+        }
+
+        .container-fluid {
+            max-width: 1400px;
+        }
+
+        /* Events list layout: prevent action icons overflow */
+        .event-row {
+            flex-wrap: wrap; /* allow wrapping when not enough width */
+            gap: 0.5rem;
+        }
+        .event-info {
+            min-width: 0; /* allow text to truncate instead of pushing */
+        }
+        .event-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            justify-content: flex-end;
+            flex-shrink: 0;
+            max-width: 100%;
+        }
+        .event-actions .btn {
+            padding: 0.35rem 0.5rem; /* compact icon buttons */
+            border-radius: 10px;
+        }
+        @media (max-width: 576px) {
+            .event-actions { gap: 0.25rem; }
+            .event-actions .btn { padding: 0.3rem 0.45rem; }
+        }
+
+        /* Кастомный скроллбар */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark-surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary-neon), var(--secondary-neon));
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--secondary-neon), var(--primary-neon));
+        }
+
+        /* Dropdown меню исправления */
+        .dropdown-menu {
+            background: var(--dark-surface-2) !important;
+            border: 1px solid var(--dark-border) !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
+            z-index: 1050 !important;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-item {
+            color: var(--text-primary) !important;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background: var(--dark-surface) !important;
+            color: var(--primary-neon) !important;
+        }
+
+        .dropdown-divider {
+            border-color: var(--dark-border) !important;
+        }
+
+        /* Анимации загрузки */
+        .loading {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .online-status {
+            background: linear-gradient(135deg, #28a745, #20c997) !important;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+        
+        /* Стили для кнопок сервера */
+        .server-card .btn-group.d-grid {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 0.25rem !important;
+        }
+        
+        .server-card .btn-group .btn {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .server-card .d-grid.gap-2 {
+            margin-top: 1rem;
+        }
+        
+        .server-card .d-grid.gap-2 > * + * {
+            margin-top: 0.5rem !important;
+        }
+
+        /* Исправление перекрытия dropdown внутри карточек */
+        .card,
+        .card-header,
+        .dropdown {
+            overflow: visible !important;
+        }
+
+        .card .dropdown-menu {
+            z-index: 2000 !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fab fa-discord me-2"></i>Potatos Party Bot
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>Дашборд</a>
+                    </li>
+                    {% if session.user %}
+                        <!-- Быстрое переключение между серверами -->
+                        {% if guilds and guilds|length > 1 %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="guildDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-server me-1"></i>Серверы
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% for guild in guilds %}
+                                    {% if guild.bot_present %}
+                                    <li><a class="dropdown-item" href="/guild/{{ guild.id }}">
+                                        <i class="fas fa-circle status-online me-2"></i>{{ guild.name }}
+                                    </a></li>
+                                    {% endif %}
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-plus me-2"></i>Добавить сервер</a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ support_server.invite_url or 'https://discord.gg/YOUR_INVITE_CODE' }}" target="_blank" title="Техподдержка">
+                            <i class="fab fa-discord me-1 text-primary"></i>{{ support_server.name or 'Поддержка' }}
+                        </a>
+                    </li>
+                    {% if session.user %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <img src="{{ session.user.avatar }}" alt="Avatar" class="rounded-circle me-2" width="24" height="24">
+                                {{ session.user.username }}
+                                {% if session.user.id|string in admin_users %}
+                                    <span class="badge bg-danger ms-1" title="Администратор бота">ADMIN</span>
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="/admin"><i class="fas fa-cog me-2"></i>Админ-панель</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Выйти</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://discord.com/oauth2/authorize?client_id=1416183475798540368&permissions=8&scope=bot+applications.commands" target="_blank">
+                                <i class="fas fa-plus-circle me-1"></i>Добавить бота
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login"><i class="fas fa-sign-in-alt me-1"></i>Войти</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid py-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'info' else 'check-circle' }} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Добавляем интерактивность
+        document.addEventListener('DOMContentLoaded', function() {
+            // Анимация появления карточек
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Исправляем z-index для dropdown меню
+            const dropdowns = document.querySelectorAll('.dropdown-menu');
+            dropdowns.forEach(dropdown => {
+                dropdown.style.zIndex = '1050';
+            });
+
+            // Smooth scroll для ссылок
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

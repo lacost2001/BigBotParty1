@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Шаблоны {{ guild.name }} - Discord Bot Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            {% if guild.icon %}
+            <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" 
+                 alt="{{ guild.name }}" class="rounded me-3" width="48" height="48">
+            {% endif %}
+            <div>
+                <h2 class="mb-0">Шаблоны {{ guild.name }}</h2>
+                <small class="text-muted">Управление шаблонами событий</small>
+            </div>
+            <div class="ms-auto">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTemplateModal">
+                    <i class="fas fa-plus me-2"></i>Создать шаблон
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if templates %}
+<div class="row">
+    {% for template_name, template_data in templates.items() %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ template_name }}</h5>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" 
+                data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item edit-template" href="#" 
+                               data-template-name="{{ template_name }}" 
+                               >
+                                <i class="fas fa-edit me-2"></i>Редактировать
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-danger delete-template" href="#" 
+                               data-template-name="{{ template_name }}">
+                                <i class="fas fa-trash me-2"></i>Удалить
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <script type="application/json" class="template-json">{{ template_data|tojson }}</script>
+                <h6 class="card-title">{{ template_data.title }}</h6>
+                {% if template_data.description %}
+                <p class="card-text text-muted">{{ template_data.description }}</p>
+                {% endif %}
+                <div class="mb-3">
+                    <small class="text-muted">Роли ({{ template_data.roles|length }}):</small>
+                    <div class="mt-1">
+                        {% for role in template_data.roles[:5] %}
+                        <span class="badge bg-secondary me-1">{{ role }}</span>
+                        {% endfor %}
+                        {% if template_data.roles|length > 5 %}
+                        <span class="badge bg-light text-dark">+{{ template_data.roles|length - 5 }} еще</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <a href="{{ url_for('guild_events', guild_id=guild.id) }}?template={{ template_name }}" 
+                   class="btn btn-success btn-sm">
+                    <i class="fas fa-calendar-plus me-2"></i>Создать событие
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-file-alt text-muted mb-3" style="font-size: 3rem;"></i>
+                <h4>Нет шаблонов</h4>
+                <p class="text-muted mb-4">
+                    Создайте первый шаблон для быстрого создания событий
+                </p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTemplateModal">
+                    <i class="fas fa-plus me-2"></i>Создать первый шаблон
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Модальное окно создания шаблона -->
+<div class="modal fade" id="createTemplateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('create_template', guild_id=guild.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создать шаблон</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="template_name" class="form-label">Название шаблона *</label>
+                        <input type="text" class="form-control" id="template_name" name="template_name" required>
+                        <div class="form-text">Уникальное название для идентификации шаблона</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Заголовок события *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Описание события</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="roles" class="form-label">Роли участников *</label>
+                        <textarea class="form-control" id="roles" name="roles" rows="6" required 
+                                  placeholder="Каждая роль с новой строки&#10;Например:&#10;Танк&#10;Лекарь&#10;ДД"></textarea>
+                        <div class="form-text">Укажите роли для участников, каждая с новой строки</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать шаблон</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Удаление выполняется через fetch -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deleteTemplate(templateName) {
+    if (!confirm('Вы уверены, что хотите удалить шаблон "' + templateName + '"?')) return;
+    const url = '{{ url_for("delete_template_api", guild_id=guild.id, template_name="TEMPLATE_NAME") }}'.replace('TEMPLATE_NAME', encodeURIComponent(templateName));
+    try {
+        const resp = await fetch(url, { method: 'POST' });
+        if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            alert('Ошибка удаления: ' + (data.error || resp.status));
+            return;
+        }
+        // Успех — перезагрузим страницу, чтобы отрисовать актуальный список
+        location.reload();
+    } catch (e) {
+        alert('Сбой запроса: ' + e);
+    }
+}
+
+function editTemplate(templateName, templateData) {
+    // Заполняем форму данными шаблона
+    document.getElementById('template_name').value = templateName;
+    document.getElementById('title').value = templateData.title;
+    document.getElementById('description').value = templateData.description || '';
+    document.getElementById('roles').value = templateData.roles.join('\n');
+    
+    // Меняем заголовок и кнопку
+    document.querySelector('#createTemplateModal .modal-title').textContent = 'Редактировать шаблон';
+    document.querySelector('#createTemplateModal form').action = '{{ url_for("create_template", guild_id=guild.id) }}';
+    
+    // Показываем модальное окно
+    // Закроем открытые dropdown, чтобы ничего не мешало модалке
+    try {
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+            const toggle = menu.parentElement?.querySelector('[data-bs-toggle="dropdown"]');
+            if (toggle) {
+                const dd = bootstrap.Dropdown.getOrCreateInstance(toggle);
+                dd.hide();
+            }
+        });
+    } catch (e) { /* noop */ }
+    new bootstrap.Modal(document.getElementById('createTemplateModal')).show();
+}
+
+// Сброс формы при закрытии модального окна
+document.getElementById('createTemplateModal').addEventListener('hidden.bs.modal', function() {
+    document.querySelector('#createTemplateModal .modal-title').textContent = 'Создать шаблон';
+    document.querySelector('#createTemplateModal form').reset();
+});
+
+// Обработчики для кнопок редактирования и удаления
+function bindTemplateActions() {
+    // Обработчик для кнопок редактирования
+    document.querySelectorAll('.edit-template').forEach(button => {
+        // Во избежание двойного подписывания снимаем прежние
+        button.removeEventListener('click', button._editHandler || (()=>{}));
+        const handler = function(e) {
+            e.preventDefault();
+            try {
+                const templateName = this.dataset.templateName;
+                const card = this.closest('.card');
+                const jsonEl = card && card.querySelector('script.template-json');
+                if (!jsonEl) throw new Error('template json not found');
+                const templateData = JSON.parse(jsonEl.textContent.trim());
+                editTemplate(templateName, templateData);
+            } catch (err) {
+                alert('Не удалось разобрать данные шаблона: ' + err);
+                console.error(err);
+            }
+        };
+        button._editHandler = handler;
+        button.addEventListener('click', handler);
+    });
+
+    // Обработчик для кнопок удаления
+    document.querySelectorAll('.delete-template').forEach(button => {
+        button.removeEventListener('click', button._deleteHandler || (()=>{}));
+        const handler = function(e) {
+            e.preventDefault();
+            const templateName = this.dataset.templateName;
+            deleteTemplate(templateName);
+        };
+        button._deleteHandler = handler;
+        button.addEventListener('click', handler);
+    });
+}
+
+// Делегирование на документ на случай динамики или конфликтов
+document.addEventListener('click', function(e) {
+    const editLink = e.target.closest('.edit-template');
+    if (editLink) {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            const templateName = editLink.dataset.templateName;
+            const card = editLink.closest('.card');
+            const jsonEl = card && card.querySelector('script.template-json');
+            if (!jsonEl) throw new Error('template json not found');
+            const templateData = JSON.parse(jsonEl.textContent.trim());
+            editTemplate(templateName, templateData);
+        } catch (err) {
+            alert('Не удалось разобрать данные шаблона: ' + err);
+            console.error(err);
+        }
+        return;
+    }
+    const delLink = e.target.closest('.delete-template');
+    if (delLink) {
+        e.preventDefault();
+        e.stopPropagation();
+        const templateName = delLink.dataset.templateName;
+        deleteTemplate(templateName);
+    }
+});
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindTemplateActions);
+} else { bindTemplateActions(); }
+</script>
+{% endblock %}

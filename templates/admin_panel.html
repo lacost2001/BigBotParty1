@@ -1,0 +1,975 @@
+{% extends "base.html" %}
+
+{% block title %}Панель администратора - Discord Bot Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="fas fa-cogs me-2 text-warning"></i>
+                    Панель администратора
+                </h2>
+                <small class="text-muted">Системное управление и конфигурация</small>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Назад к дашборду
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика системы -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary bg-gradient">
+            <div class="card-body text-center">
+                <i class="fas fa-server fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ migrated_guilds|length if migrated_guilds else 0 }}</h4>
+                <small>Активных серверов</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success bg-gradient">
+            <div class="card-body text-center">
+                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                <h4 class="mb-0">
+                    {% if migrated_guilds %}
+                        {% set total_templates = 0 %}
+                        {% for guild_id, guild_info in migrated_guilds.items() %}
+                            {% set total_templates = total_templates + guild_info.template_count %}
+                        {% endfor %}
+                        {{ total_templates }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h4>
+                <small>Шаблонов в системе</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning bg-gradient">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ templates_to_migrate if templates_to_migrate else 0 }}</h4>
+                <small>Требует миграции</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info bg-gradient">
+            <div class="card-body text-center">
+                <i class="fas fa-database fa-2x mb-2"></i>
+                <h4 class="mb-0">JSON</h4>
+                <small>Формат хранения</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Миграция шаблонов -->
+    <div class="col-lg-8 mb-4">
+        <div class="card admin-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-database me-2 text-primary"></i>
+                    Миграция шаблонов
+                </h5>
+                <span class="badge bg-secondary">Система данных</span>
+            </div>
+            <div class="card-body">
+                {% if templates_to_migrate > 0 %}
+                <div class="alert alert-warning border-0">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading">Требуется миграция данных</h6>
+                            <p class="mb-3">
+                                Обнаружено <strong>{{ templates_to_migrate }}</strong> шаблонов в старом формате (settings.json).
+                                Рекомендуется мигрировать их в новый формат для улучшения производительности.
+                            </p>
+                            <div class="migration-benefits mb-3">
+                                <small class="text-muted d-block mb-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Преимущества миграции:
+                                </small>
+                                <ul class="list-unstyled small text-muted">
+                                    <li><i class="fas fa-check text-success me-1"></i> Быстрая загрузка шаблонов</li>
+                                    <li><i class="fas fa-check text-success me-1"></i> Независимое хранение по серверам</li>
+                                    <li><i class="fas fa-check text-success me-1"></i> Улучшенная производительность</li>
+                                    <li><i class="fas fa-check text-success me-1"></i> Возможность индивидуальных бэкапов</li>
+                                </ul>
+                            </div>
+                            <button id="migrateBtn" class="btn btn-warning">
+                                <i class="fas fa-sync me-2"></i>Запустить миграцию
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-success border-0">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading">Система обновлена</h6>
+                            <p class="mb-0">
+                                Все шаблоны используют современный формат хранения. 
+                                Миграция не требуется.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Прогресс-бар миграции -->
+                <div id="migrationProgress" class="mt-3" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted mt-1 d-block">Выполняется миграция...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Системная информация -->
+    <div class="col-lg-4 mb-4">
+        <div class="card admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2 text-info"></i>
+                    Системная информация
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="system-info">
+                    <div class="info-item mb-3">
+                        <i class="fas fa-folder text-primary me-2"></i>
+                        <strong>Папка шаблонов:</strong>
+                        <br>
+                        <code class="small">templates_data/</code>
+                    </div>
+                    
+                    <div class="info-item mb-3">
+                        <i class="fas fa-file-code text-warning me-2"></i>
+                        <strong>Формат файлов:</strong>
+                        <br>
+                        <code class="small">guild_{id}_templates.json</code>
+                    </div>
+                    
+                    <div class="info-item mb-3">
+                        <i class="fas fa-cog text-success me-2"></i>
+                        <strong>Скрипт миграции:</strong>
+                        <br>
+                        <code class="small">migrate_templates.py</code>
+                    </div>
+                    
+                    <div class="info-item">
+                        <i class="fas fa-shield-alt text-danger me-2"></i>
+                        <strong>Бэкап:</strong>
+                        <br>
+                        <small class="text-muted">
+                            Автоматически сохраняется в settings.json
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Мигрированные серверы -->
+{% if migrated_guilds %}
+<div class="row">
+    <div class="col-12">
+        <div class="card admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2 text-success"></i>
+                    Мигрированные серверы
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-server me-1"></i>Сервер</th>
+                                <th><i class="fas fa-hashtag me-1"></i>Guild ID</th>
+                                <th><i class="fas fa-file-alt me-1"></i>Шаблонов</th>
+                                <th><i class="fas fa-calendar me-1"></i>Статус</th>
+                                <th><i class="fas fa-tools me-1"></i>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for guild_id, guild_info in migrated_guilds.items() %}
+                            <tr class="guild-row" data-guild-id="{{ guild_id }}">
+                                <td>
+                                    <strong class="text-primary">{{ guild_info.guild_name }}</strong>
+                                </td>
+                                <td>
+                                    <code class="small">{{ guild_id }}</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ guild_info.template_count }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Мигрирован
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="/guild/{{ guild_id }}/templates" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit me-1"></i>Страница редактирования
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewTemplates('{{ guild_id }}', '{{ guild_info.guild_name|e }}')">
+                                            <i class="fas fa-eye me-1"></i>Просмотр
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="loadTemplatesForEdit('{{ guild_id }}', '{{ guild_info.guild_name|e }}')">
+                                            <i class="fas fa-tools me-1"></i>Быстрое редактирование
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Модальное окно для просмотра шаблонов -->
+<div class="modal fade" id="templatesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Шаблоны сервера: <span id="modalGuildName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="templatesContent">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                        <p class="mt-2">Загрузка шаблонов...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Закрыть
+                </button>
+                <a id="editTemplatesBtn" href="#" class="btn btn-primary">
+                    <i class="fas fa-edit me-2"></i>Редактировать
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования отдельного шаблона -->
+<div class="modal fade" id="editTemplateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Редактировать шаблон: <span id="editTemplateName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editTemplateForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editGuildId" name="guild_id">
+                    <input type="hidden" id="editOriginalName" name="original_name">
+                    
+                    <div class="mb-3">
+                        <label for="editTemplateNameInput" class="form-label">
+                            <i class="fas fa-tag me-1"></i>Название шаблона
+                        </label>
+                        <input type="text" class="form-control" id="editTemplateNameInput" name="template_name" required>
+                        <div class="form-text">Уникальное имя для идентификации шаблона</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editTemplateTitle" class="form-label">
+                            <i class="fas fa-heading me-1"></i>Заголовок события
+                        </label>
+                        <input type="text" class="form-control" id="editTemplateTitle" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editTemplateDescription" class="form-label">
+                            <i class="fas fa-align-left me-1"></i>Описание (опционально)
+                        </label>
+                        <textarea class="form-control" id="editTemplateDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editTemplateRoles" class="form-label">
+                            <i class="fas fa-users me-1"></i>Роли
+                        </label>
+                        <textarea class="form-control" id="editTemplateRoles" name="roles" rows="4" required></textarea>
+                        <div class="form-text">Каждая роль на новой строке</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Отмена
+                    </button>
+                    <button type="button" class="btn btn-danger" id="deleteTemplateBtn">
+                        <i class="fas fa-trash me-2"></i>Удалить
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+        <!-- Управление рекрут/очки/магазиn -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card admin-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-shield me-2 text-info"></i>
+                            Рекрут • Очки • Магазин
+                        </h5>
+                        <span class="badge bg-secondary">ReqrutPot интеграция</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="recruitGuildId" class="form-label">Guild ID</label>
+                                <input type="text" class="form-control" id="recruitGuildId" placeholder="Например: 123456789012345678">
+                                <div class="form-text">Введите ID сервера для запросов</div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-outline-primary" onclick="loadLeaderboard()">
+                                        <i class="fas fa-trophy me-1"></i> Топ очков
+                                    </button>
+                                    <button class="btn btn-outline-warning" onclick="loadPendingSubmissions()">
+                                        <i class="fas fa-inbox me-1"></i> Ожидающие заявки
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="loadPendingPurchases()">
+                                        <i class="fas fa-shopping-cart me-1"></i> Ожидающие покупки
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="recruitUserId" class="form-label">User ID</label>
+                                <input type="text" class="form-control" id="recruitUserId" placeholder="ID пользователя">
+                                <div class="form-text">Для проверки баланса</div>
+                            </div>
+                            <div class="col-md-8">
+                                <button class="btn btn-outline-success" onclick="loadUserBalance()">
+                                    <i class="fas fa-coins me-1"></i> Проверить баланс
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-4" id="recruitMessages" style="display:none;"></div>
+
+                        <div class="mt-4" id="leaderboardArea" style="display:none;"></div>
+                        <div class="mt-4" id="submissionsArea" style="display:none;"></div>
+                        <div class="mt-4" id="purchasesArea" style="display:none;"></div>
+                        <div class="mt-4" id="userBalanceArea" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+    
+        </div>
+
+        {% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('migrateBtn')?.addEventListener('click', function() {
+    const btn = this;
+    const progressContainer = document.getElementById('migrationProgress');
+    const progressBar = progressContainer.querySelector('.progress-bar');
+    
+    // Отключаем кнопку и показываем прогресс
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Выполняется...';
+    progressContainer.style.display = 'block';
+    
+    // Анимация прогресс-бара
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 20;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+    }, 200);
+    
+    // Отправляем запрос на миграцию
+    fetch('/admin/migrate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        clearInterval(interval);
+        progressBar.style.width = '100%';
+        
+        setTimeout(() => {
+            if (data.success) {
+                // Успешная миграция
+                location.reload();
+            } else {
+                // Ошибка миграции
+                alert('Ошибка миграции: ' + (data.error || 'Неизвестная ошибка'));
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync me-2"></i>Запустить миграцию';
+                progressContainer.style.display = 'none';
+            }
+        }, 500);
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        clearInterval(interval);
+        alert('Ошибка соединения: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync me-2"></i>Запустить миграцию';
+        progressContainer.style.display = 'none';
+    });
+});
+
+// Функция для просмотра шаблонов сервера
+function viewTemplates(guildId, guildName) {
+    document.getElementById('modalGuildName').textContent = guildName;
+    document.getElementById('editTemplatesBtn').href = '/guild/' + guildId + '/templates';
+    
+    const modal = new bootstrap.Modal(document.getElementById('templatesModal'));
+    modal.show();
+    
+    // Загружаем шаблоны
+    fetch('/api/guild/' + guildId + '/templates')
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('templatesContent');
+            
+            if (data.templates && Object.keys(data.templates).length > 0) {
+                let html = '<div class="row">';
+                
+                for (const [templateName, templateData] of Object.entries(data.templates)) {
+                    html += `
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-file-alt me-2 text-warning"></i>
+                                        ${templateName}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title text-primary">${templateData.title || 'Без названия'}</h6>
+                                    ${templateData.description ? `<p class="card-text text-muted small">${templateData.description}</p>` : ''}
+                                    
+                                    ${templateData.roles && templateData.roles.length > 0 ? `
+                                        <div class="mb-2">
+                                            <small class="text-muted d-block mb-1">
+                                                <i class="fas fa-users me-1"></i>Роли (${templateData.roles.length}):
+                                            </small>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                ${templateData.roles.slice(0, 3).map(role => 
+                                                    `<span class="badge bg-secondary small">${role}</span>`
+                                                ).join('')}
+                                                ${templateData.roles.length > 3 ? 
+                                                    `<span class="badge bg-info small">+${templateData.roles.length - 3} еще</span>` : 
+                                                    ''
+                                                }
+                                            </div>
+                                                    // ====== Reqruт/Очки/Магазин (UI + API) ======
+                                                    function _getGuildId() {
+                                                        const gid = document.getElementById('recruitGuildId')?.value?.trim();
+                                                        if (!gid) {
+                                                            showRecruitMessage('Укажите Guild ID', 'danger');
+                                                            throw new Error('Guild ID is required');
+                                                        }
+                                                        return gid;
+                                                    }
+
+                                                    function _renderTable(containerId, headers, rowsHtml) {
+                                                        const container = document.getElementById(containerId);
+                                                        container.style.display = 'block';
+                                                        const headersHtml = headers.map(function(h){ return '<th>'+h+'</th>'; }).join('');
+                                                        const html = ''
+                                                            + '<div class="table-responsive">'
+                                                            +   '<table class="table table-dark table-hover align-middle">'
+                                                            +     '<thead><tr>' + headersHtml + '</tr></thead>'
+                                                            +     '<tbody>' + (rowsHtml || '') + '</tbody>'
+                                                            +   '</table>'
+                                                            + '</div>';
+                                                        container.innerHTML = html;
+                                                    }
+
+                                                    function showRecruitMessage(text, type) {
+                                                        if (!type) type = 'info';
+                                                        const el = document.getElementById('recruitMessages');
+                                                        el.style.display = 'block';
+                                                        el.innerHTML = '<div class="alert alert-' + type + ' mb-0"><i class="fas fa-info-circle me-2"></i>' + text + '</div>';
+                                                    }
+
+                                                    async function loadLeaderboard() {
+                                                        const guildId = _getGuildId();
+                                                        document.getElementById('leaderboardArea').innerHTML = '<div class="text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Загрузка топа...</div>';
+                                                        document.getElementById('leaderboardArea').style.display = 'block';
+                                                        try {
+                                                            const resp = await fetch('/api/' + guildId + '/leaderboard');
+                                                            const data = await resp.json();
+                                                            if (!resp.ok) throw new Error(data.error || 'Ошибка запроса');
+                                                            const items = data.leaderboard || [];
+                                                            if (items.length === 0) {
+                                                                _renderTable('leaderboardArea', ['#', 'User ID', 'Очки', 'Событий'], '<tr><td colspan="4" class="text-muted">Пусто</td></tr>');
+                                                                return;
+                                                            }
+                                                            const rows = items.map(function(it, idx){
+                                                                return '<tr>'
+                                                                    + '<td>' + (idx+1) + '</td>'
+                                                                    + '<td><code>' + it.user_id + '</code></td>'
+                                                                    + '<td>' + it.points + '</td>'
+                                                                    + '<td>' + it.events + '</td>'
+                                                                    + '</tr>';
+                                                            }).join('');
+                                                            _renderTable('leaderboardArea', ['#', 'User ID', 'Очки', 'Событий'], rows);
+                                                        } catch (e) {
+                                                            showRecruitMessage('Ошибка загрузки топа: ' + e.message, 'danger');
+                                                        }
+                                                    }
+
+                                                    async function loadPendingSubmissions() {
+                                                        const guildId = _getGuildId();
+                                                        const area = document.getElementById('submissionsArea');
+                                                        area.innerHTML = '<div class="text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Загрузка заявок...</div>';
+                                                        area.style.display = 'block';
+                                                        try {
+                                                            const resp = await fetch('/api/' + guildId + '/submissions/pending');
+                                                            const data = await resp.json();
+                                                            if (!resp.ok) throw new Error(data.error || 'Ошибка запроса');
+                                                            const items = data.items || [];
+                                                            if (items.length === 0) {
+                                                                _renderTable('submissionsArea', ['ID', 'User ID', 'Тип', 'Создано'], '<tr><td colspan="4" class="text-muted">Нет ожидающих заявок</td></tr>');
+                                                                return;
+                                                            }
+                                                            const rows = items.map(function(it){
+                                                                return '<tr>'
+                                                                    + '<td>' + it.id + '</td>'
+                                                                    + '<td><code>' + it.user_id + '</code></td>'
+                                                                    + '<td>' + (it.type || '—') + '</td>'
+                                                                    + '<td>' + (it.created_at || '—') + '</td>'
+                                                                    + '</tr>';
+                                                            }).join('');
+                                                            _renderTable('submissionsArea', ['ID', 'User ID', 'Тип', 'Создано'], rows);
+                                                        } catch (e) {
+                                                            showRecruitMessage('Ошибка загрузки заявок: ' + e.message, 'danger');
+                                                        }
+                                                    }
+
+                                                    async function loadPendingPurchases() {
+                                                        const guildId = _getGuildId();
+                                                        const area = document.getElementById('purchasesArea');
+                                                        area.innerHTML = '<div class="text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Загрузка покупок...</div>';
+                                                        area.style.display = 'block';
+                                                        try {
+                                                            const resp = await fetch('/api/' + guildId + '/shop/pending');
+                                                            const data = await resp.json();
+                                                            if (!resp.ok) throw new Error(data.error || 'Ошибка запроса');
+                                                            const items = data.items || [];
+                                                            if (items.length === 0) {
+                                                                _renderTable('purchasesArea', ['ID', 'User ID', 'Товар', 'Цена', 'Создано', 'Действия'], '<tr><td colspan="6" class="text-muted">Нет ожидающих покупок</td></tr>');
+                                                                return;
+                                                            }
+                                                            const rows = items.map(function(it){
+                                                                return '<tr>'
+                                                                    + '<td>' + it.id + '</td>'
+                                                                    + '<td><code>' + it.user_id + '</code></td>'
+                                                                    + '<td>' + (it.item_name || '—') + '</td>'
+                                                                    + '<td>' + (it.price || '—') + '</td>'
+                                                                    + '<td>' + (it.created_at || '—') + '</td>'
+                                                                    + '<td>'
+                                                                    +   '<div class="btn-group btn-group-sm" role="group">'
+                                                                    +     '<button class="btn btn-success" onclick="processPurchase(' + it.id + ', true)"><i class="fas fa-check"></i></button>'
+                                                                    +     '<button class="btn btn-danger" onclick="processPurchase(' + it.id + ', false)"><i class="fas fa-times"></i></button>'
+                                                                    +   '</div>'
+                                                                    + '</td>'
+                                                                    + '</tr>';
+                                                            }).join('');
+                                                            _renderTable('purchasesArea', ['ID', 'User ID', 'Товар', 'Цена', 'Создано', 'Действия'], rows);
+                                                        } catch (e) {
+                                                            showRecruitMessage('Ошибка загрузки покупок: ' + e.message, 'danger');
+                                                        }
+                                                    }
+
+                                                    async function processPurchase(purchaseId, approve) {
+                                                        const guildId = _getGuildId();
+                                                        let reason = '';
+                                                        if (!approve) {
+                                                            reason = prompt('Причина отклонения (опционально):') || '';
+                                                        }
+                                                        try {
+                                                        const resp = await fetch('/api/' + guildId + '/shop/process', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ purchase_id: purchaseId, action: approve ? 'approve' : 'reject', reason })
+                                                            });
+                                                            const data = await resp.json();
+                                                            if (!resp.ok || !data.success) throw new Error(data.error || 'Не удалось обработать покупку');
+                                                            showRecruitMessage('Покупка обработана', 'success');
+                                                            loadPendingPurchases();
+                                                        } catch (e) {
+                                                            showRecruitMessage('Ошибка обработки покупки: ' + e.message, 'danger');
+                                                        }
+                                                    }
+
+                                                    async function loadUserBalance() {
+                                                        const guildId = _getGuildId();
+                                                        const userId = document.getElementById('recruitUserId')?.value?.trim();
+                                                        if (!userId) {
+                                                            showRecruitMessage('Укажите User ID', 'danger');
+                                                            return;
+                                                        }
+                                                        const area = document.getElementById('userBalanceArea');
+                                                        area.innerHTML = '<div class="text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Загрузка баланса...</div>';
+                                                        area.style.display = 'block';
+                                                        try {
+                                                            const resp = await fetch('/api/' + guildId + '/balance/' + userId);
+                                                            const data = await resp.json();
+                                                            if (!resp.ok) throw new Error(data.error || 'Ошибка запроса');
+                                                            var row = '<tr>'
+                                                                + '<td><code>' + userId + '</code></td>'
+                                                                + '<td>' + data.points + '</td>'
+                                                                + '<td>' + data.events + '</td>'
+                                                                + '</tr>';
+                                                            _renderTable('userBalanceArea', ['User ID', 'Очки', 'Событий'], row);
+                                                        } catch (e) {
+                                                            showRecruitMessage('Ошибка загрузки баланса: ' + e.message, 'danger');
+                                                        }
+                                                    }
+
+                                                    // ====== /Reqruт/Очки/Магазин ======
+
+                                                    // Добавляем стили для админ-панели
+                                        </div>
+                                    ` : ''}
+                                    
+                                    <div class="mt-auto pt-2">
+                                        <button class="btn btn-sm btn-outline-primary w-100" 
+                                                onclick="editSingleTemplate('${guildId}', '${templateName}', ${JSON.stringify(templateData).replace(/'/g, "&apos;")})">
+                                            <i class="fas fa-edit me-1"></i>Редактировать
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                content.innerHTML = html;
+            } else {
+                content.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <h5>Шаблоны не найдены</h5>
+                        <p>На этом сервере нет созданных шаблонов.</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки шаблонов:', error);
+            document.getElementById('templatesContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Ошибка загрузки шаблонов: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Функция для загрузки шаблонов для редактирования
+function loadTemplatesForEdit(guildId, guildName) {
+    fetch(`/api/guild/${guildId}/templates`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.templates) {
+                showTemplateSelector(guildId, guildName, data.templates);
+            } else {
+                alert('Ошибка загрузки шаблонов: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки шаблонов:', error);
+            alert('Ошибка загрузки шаблонов: ' + error.message);
+        });
+}
+
+// Показать селектор шаблонов для выбора редактируемого
+function showTemplateSelector(guildId, guildName, templates) {
+    if (Object.keys(templates).length === 0) {
+        alert('На сервере нет шаблонов для редактирования');
+        return;
+    }
+    
+    let templatesList = '';
+    for (const [templateName, templateData] of Object.entries(templates)) {
+        templatesList += `
+            <div class="template-select-item mb-2">
+                <button class="btn btn-outline-primary w-100 text-start" 
+                        onclick="editSingleTemplate('${guildId}', '${templateName}', ${JSON.stringify(templateData).replace(/'/g, '&quot;')})">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${templateName}</strong>
+                            ${templateData.title ? '<br><small class="text-muted">' + templateData.title + '</small>' : ''}
+                        </div>
+                        <i class="fas fa-edit"></i>
+                    </div>
+                </button>
+            </div>
+        `;
+    }
+    
+    // Создаем модальное окно для выбора шаблона
+    const modalContent = `
+        <div class="modal fade" id="templateSelectorModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark border border-info">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-info">
+                            <i class="fas fa-edit me-2"></i>Выберите шаблон для редактирования
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <strong class="text-primary">Сервер:</strong> ${guildName}
+                        </div>
+                        <div class="templates-list">
+                            ${templatesList}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Удаляем существующий модал если есть
+    const existingModal = document.getElementById('templateSelectorModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Добавляем новый модал
+    document.body.insertAdjacentHTML('beforeend', modalContent);
+    
+    // Показываем модал
+    const modal = new bootstrap.Modal(document.getElementById('templateSelectorModal'));
+    modal.show();
+    
+    // Удаляем модал после закрытия
+    document.getElementById('templateSelectorModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+function editSingleTemplate(guildId, templateName, templateData) {
+    document.getElementById('editTemplateName').textContent = templateName;
+    document.getElementById('editGuildId').value = guildId;
+    document.getElementById('editOriginalName').value = templateName;
+    document.getElementById('editTemplateNameInput').value = templateName;
+    document.getElementById('editTemplateTitle').value = templateData.title || '';
+    document.getElementById('editTemplateDescription').value = templateData.description || '';
+    
+    // Обрабатываем роли
+    let rolesText = '';
+    if (Array.isArray(templateData.roles)) {
+        rolesText = templateData.roles.join('\n');
+    } else if (typeof templateData.roles === 'string') {
+        rolesText = templateData.roles;
+    }
+    document.getElementById('editTemplateRoles').value = rolesText;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editTemplateModal'));
+    modal.show();
+}
+
+// Обработка формы редактирования шаблона
+document.getElementById('editTemplateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const guildId = formData.get('guild_id');
+    const originalName = formData.get('original_name');
+    const templateName = formData.get('template_name');
+    
+    const data = {
+        template_name: templateName,
+        title: formData.get('title'),
+        description: formData.get('description'),
+        roles: formData.get('roles')
+    };
+    
+    // Если имя шаблона изменилось, нужно удалить старый и создать новый
+    let url = `/guild/${guildId}/templates`;
+    if (originalName !== templateName) {
+        // Сначала удалим старый шаблон
+        fetch(`/guild/${guildId}/templates/${encodeURIComponent(originalName)}/delete`, {
+            method: 'POST'
+        }).then(() => {
+            // Затем создадим новый
+            return submitTemplateUpdate(url, data);
+        }).then(() => {
+            handleTemplateUpdateSuccess();
+        }).catch(error => {
+            handleTemplateUpdateError(error);
+        });
+    } else {
+        // Просто обновляем существующий
+        submitTemplateUpdate(url, data)
+            .then(() => handleTemplateUpdateSuccess())
+            .catch(error => handleTemplateUpdateError(error));
+    }
+});
+
+function submitTemplateUpdate(url, data) {
+    return fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(data)
+    });
+}
+
+function handleTemplateUpdateSuccess() {
+    bootstrap.Modal.getInstance(document.getElementById('editTemplateModal')).hide();
+    location.reload(); // Перезагружаем страницу для обновления данных
+}
+
+function handleTemplateUpdateError(error) {
+    console.error('Ошибка обновления шаблона:', error);
+    alert('Ошибка при обновлении шаблона: ' + error.message);
+}
+
+// Обработка удаления шаблона
+document.getElementById('deleteTemplateBtn').addEventListener('click', function() {
+    const templateName = document.getElementById('editOriginalName').value;
+    const guildId = document.getElementById('editGuildId').value;
+    
+    if (confirm(`Вы уверены, что хотите удалить шаблон "${templateName}"?\n\nЭто действие нельзя отменить.`)) {
+        fetch(`/guild/${guildId}/templates/${encodeURIComponent(templateName)}/delete`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('editTemplateModal')).hide();
+                location.reload();
+            } else {
+                throw new Error('Ошибка удаления шаблона');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка удаления шаблона:', error);
+            alert('Ошибка при удалении шаблона: ' + error.message);
+        });
+    }
+});
+
+// Добавляем стили для админ-панели
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .admin-card {
+            border: 1px solid var(--dark-border);
+            transition: all 0.3s ease;
+        }
+        
+        .admin-card:hover {
+            border-color: var(--primary-neon);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.1);
+        }
+        
+        .admin-card .card-header {
+            background: linear-gradient(135deg, var(--dark-surface-2), var(--dark-surface));
+            border-bottom: 1px solid var(--dark-border);
+        }
+        
+        .system-info .info-item {
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+        }
+        
+        .migration-benefits {
+            background: rgba(0, 245, 255, 0.05);
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+        }
+        
+        .table-dark {
+            background: var(--dark-surface-2);
+        }
+        
+        .table-dark td, .table-dark th {
+            border-color: var(--dark-border);
+        }
+        
+        .table-hover tbody tr:hover {
+            background: rgba(0, 245, 255, 0.1);
+        }
+        
+        .progress {
+            background-color: var(--dark-surface);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(135deg, var(--primary-neon), var(--accent-blue));
+        }
+        
+        .template-select-item .btn {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+        }
+        
+        .template-select-item .btn:hover {
+            border-color: #00f5ff;
+            background: linear-gradient(45deg, rgba(0, 245, 255, 0.1), rgba(255, 0, 127, 0.1));
+            transform: translateX(5px);
+        }
+        
+        .templates-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+{% endblock %}

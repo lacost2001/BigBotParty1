@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+
+{% block title %}Управление заявками - {{ guild_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="fas fa-inbox me-2 text-primary"></i>
+                    Управление заявками
+                </h2>
+                <small class="text-muted">{{ guild_name }}</small>
+            </div>
+            <div>
+                <a href="{{ url_for('guild_settings', guild_id=guild_id) }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-left me-2"></i>Назад
+                </a>
+                <button class="btn btn-primary" onclick="refreshActiveTab()">
+                    <i class="fas fa-sync me-2"></i>Обновить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Вкладки -->
+<div class="row mb-4">
+    <div class="col-12">
+        <ul class="nav nav-tabs" id="submissionTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="points-tab" data-bs-toggle="tab" data-bs-target="#points" type="button" role="tab" onclick="switchTab('points')">
+                    <i class="fas fa-coins me-2"></i>Заявки на очки
+                    <span class="badge bg-primary ms-2" id="pointsTabBadge">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="guild-tab" data-bs-toggle="tab" data-bs-target="#guild" type="button" role="tab" onclick="switchTab('guild')">
+                    <i class="fas fa-users me-2"></i>Заявки в гильдию
+                    <span class="badge bg-warning ms-2" id="guildTabBadge">0</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="tab-content" id="submissionTabContent">
+    <!-- Вкладка: Заявки на очки -->
+    <div class="tab-pane fade show active" id="points" role="tabpanel">
+        <!-- Статистика заявок на очки -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning bg-gradient">
+                    <div class="card-body text-center">
+                        <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+                        <h4 class="mb-0" id="pointsPendingCount">-</h4>
+                        <small>Ожидающих</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success bg-gradient">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check fa-2x mb-2"></i>
+                        <h4 class="mb-0" id="pointsApprovedCount">-</h4>
+                        <small>Одобрено</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-danger bg-gradient">
+                    <div class="card-body text-center">
+                        <i class="fas fa-times fa-2x mb-2"></i>
+                        <h4 class="mb-0" id="pointsRejectedCount">-</h4>
+                        <small>Отклонено</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info bg-gradient">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line fa-2x mb-2"></i>
+                        <h4 class="mb-0" id="pointsTotalCount">-</h4>
+                        <small>Всего заявок</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Фильтры для заявок на очки -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <select class="form-select" id="pointsStatusFilter" onchange="filterPointsSubmissions()">
+                    <option value="">Все статусы</option>
+                    <option value="pending">Ожидающие</option>
+                    <option value="approved">Одобренные</option>
+                    <option value="rejected">Отклонённые</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="pointsSearchInput" placeholder="Поиск по описанию..." onkeyup="filterPointsSubmissions()">
+            </div>
+        </div>
+
+        <!-- Таблица заявок на очки -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-coins me-2"></i>
+                    Заявки на очки
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="pointsSubmissionsList">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-2">Загрузка заявок на очки...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладка: Заявки в гильдию -->
+    <div class="tab-pane fade" id="guild" role="tabpanel">
+        <!-- Статистика заявок в гильдию -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning bg-gradient">
+                    <div class="card-body text-center">
+                        <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+                        <h4 class="mb-0" id="guildPendingCount">-</h4>
+                        <small>На рассмотрении</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success bg-gradient">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-plus fa-2x mb-2"></i>
+                        <h4 class="mb-0" id="guildAcceptedCount">-</h4>
+                        <small>Приняты</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-danger bg-gradient">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-times fa-2x mb-2"></i>
+                        <h4 class="mb-0" id="guildRejectedCount">-</h4>
+                        <small>Отклонены</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info bg-gradient">
+                    <div class="card-body text-center">
+                        <i class="fas fa-users fa-2x mb-2"></i>
+                        <h4 class="mb-0" id="guildTotalCount">-</h4>
+                        <small>Всего заявок</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Фильтры для заявок в гильдию -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <select class="form-select" id="guildStatusFilter" onchange="filterGuildApplications()">
+                    <option value="">Все статусы</option>
+                    <option value="pending">На рассмотрении</option>
+                    <option value="accepted">Приняты</option>
+                    <option value="rejected">Отклонены</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="guildSearchInput" placeholder="Поиск по имени игрока..." onkeyup="filterGuildApplications()">
+            </div>
+        </div>
+
+        <!-- Таблица заявок в гильдию -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    Заявки на вступление в гильдию
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="guildApplicationsList">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-2">Загрузка заявок в гильдию...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+                <i class="fas fa-times fa-2x mb-2"></i>
+                <h4 class="mb-0" id="rejectedCount">-</h4>
+                <small>Отклонено сегодня</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info bg-gradient">
+            <div class="card-body text-center">
+                <i class="fas fa-coins fa-2x mb-2"></i>
+                <h4 class="mb-0" id="totalPoints">-</h4>
+                <small>Очков выдано</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ожидающие заявки -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-inbox me-2"></i>
+                    Ожидающие заявки
+                </h5>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" id="filterStatus" onchange="filterSubmissions()">
+                        <option value="">Все заявки</option>
+                        <option value="pending">Ожидающие</option>
+                        <option value="approved">Одобренные</option>
+                        <option value="rejected">Отклоненные</option>
+                    </select>
+                    <select class="form-select form-select-sm" id="filterType" onchange="filterSubmissions()">
+                        <option value="">Все типы</option>
+                        <option value="ZvZ">ZvZ</option>
+                        <option value="Ganking">Ganking</option>
+                        <option value="Hellgates">Hellgates</option>
+                        <option value="Corrupted">Corrupted</option>
+                        <option value="Other">Другое</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="submissionsTable">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                        <p>Загрузка заявок...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра деталей заявки -->
+<div class="modal fade" id="submissionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>
+                    Детали заявки #<span id="modalSubmissionId"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <!-- Содержимое загружается динамически -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-danger" onclick="rejectSubmissionModal()">
+                        <i class="fas fa-times me-1"></i>Отклонить
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="approveSubmissionModal()">
+                        <i class="fas fa-check me-1"></i>Одобрить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const guildId = '{{ guild_id }}';
+let currentSubmissions = [];
+let currentSubmissionId = null;
+
+function loadSubmissions(status = null) {
+    let url = `/api/${guildId}/submissions/all`;
+    if (status) {
+        url += `?status=${status}`;
+    }
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            currentSubmissions = data.submissions || [];
+            updateStats();
+            renderSubmissions();
+        })
+        .catch(error => {
+            console.error('Error loading submissions:', error);
+            document.getElementById('submissionsTable').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Ошибка загрузки заявок: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function loadPendingSubmissions() {
+    loadSubmissions('pending');
+}
+
+function updateStats() {
+    const pendingCount = currentSubmissions.filter(s => s.status === 'pending').length;
+    const approvedCount = currentSubmissions.filter(s => s.status === 'approved').length;
+    const rejectedCount = currentSubmissions.filter(s => s.status === 'rejected').length;
+    const totalPoints = currentSubmissions
+        .filter(s => s.status === 'approved')
+        .reduce((sum, s) => sum + (s.base_points || 0), 0);
+    
+    document.getElementById('pendingCount').textContent = pendingCount;
+    document.getElementById('approvedCount').textContent = approvedCount;
+    document.getElementById('rejectedCount').textContent = rejectedCount;
+    document.getElementById('totalPoints').textContent = totalPoints;
+}
+
+function renderSubmissions() {
+    const container = document.getElementById('submissionsTable');
+    
+    if (currentSubmissions.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <h5>Нет ожидающих заявок</h5>
+                <p>Все заявки обработаны</p>
+            </div>
+        `;
+        return;
+    }
+
+    const html = `
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Пользователь</th>
+                        <th>Тип события</th>
+                        <th>Участники</th>
+                        <th>Базовые очки</th>
+                        <th>Статус</th>
+                        <th>Дата</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${currentSubmissions.map(submission => `
+                        <tr>
+                            <td><code>${submission.id}</code></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                    <code>${submission.submitter_id || submission.user_id}</code>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">${submission.event_type || submission.type || 'Unknown'}</span>
+                            </td>
+                            <td>${submission.group_size || 1}</td>
+                            <td>${submission.base_points || 0}</td>
+                            <td>
+                                ${getStatusBadge(submission.status || 'pending')}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    ${new Date(submission.created_at).toLocaleString('ru-RU')}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="viewSubmission(${submission.id})" title="Просмотр">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    ${submission.status === 'pending' ? `
+                                    <div class="input-group" style="width: 100px;">
+                                        <span class="input-group-text">x</span>
+                                        <input type="number" step="0.1" min="0" max="2" value="1.0" 
+                                               class="form-control" id="mul-${submission.id}">
+                                    </div>
+                                    <button class="btn btn-success" onclick="approveSubmission(${submission.id})" title="Одобрить">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-danger" onclick="rejectSubmission(${submission.id})" title="Отклонить">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    ` : `
+                                    <span class="badge bg-secondary">Обработано</span>
+                                    `}
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function filterSubmissions() {
+    const filterType = document.getElementById('filterType').value;
+    // Здесь можно добавить фильтрацию
+    renderSubmissions();
+}
+
+function viewSubmission(id) {
+    const submission = currentSubmissions.find(s => s.id === id);
+    if (!submission) return;
+    
+    currentSubmissionId = id;
+    document.getElementById('modalSubmissionId').textContent = id;
+    
+    const content = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-info-circle me-2"></i>Основная информация</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>ID заявки:</strong></td><td>${submission.id}</td></tr>
+                    <tr><td><strong>Пользователь:</strong></td><td><code>${submission.submitter_id || submission.user_id}</code></td></tr>
+                    <tr><td><strong>Тип события:</strong></td><td><span class="badge bg-info">${submission.event_type || submission.type}</span></td></tr>
+                    <tr><td><strong>Действие:</strong></td><td>${submission.action || '-'}</td></tr>
+                    <tr><td><strong>Участники:</strong></td><td>${submission.group_size || 1}</td></tr>
+                    <tr><td><strong>Базовые очки:</strong></td><td>${submission.base_points || 0}</td></tr>
+                    <tr><td><strong>Дата создания:</strong></td><td>${new Date(submission.created_at).toLocaleString('ru-RU')}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-align-left me-2"></i>Описание</h6>
+                <div class="bg-light p-3 rounded">
+                    ${submission.description || 'Описание отсутствует'}
+                </div>
+                
+                ${submission.screenshot_url ? `
+                    <h6 class="mt-3"><i class="fas fa-image me-2"></i>Скриншот</h6>
+                    <a href="${submission.screenshot_url}" target="_blank" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-external-link-alt me-1"></i>Открыть скриншот
+                    </a>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('modalContent').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('submissionModal')).show();
+}
+
+async function approveSubmission(id) {
+    const multiplierInput = document.getElementById(`mul-${id}`);
+    const multiplier = parseFloat(multiplierInput ? multiplierInput.value : '1.0') || 1.0;
+    
+    try {
+        const response = await fetch(`/api/${guildId}/submissions/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                submission_id: id,
+                multiplier: multiplier
+            })
+        });
+        
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Не удалось одобрить заявку');
+        }
+        
+        showNotification('Заявка одобрена', 'success');
+        loadPendingSubmissions();
+        
+    } catch (error) {
+        showNotification(`Ошибка: ${error.message}`, 'error');
+    }
+}
+
+async function rejectSubmission(id) {
+    const reason = prompt('Причина отклонения (опционально):') || '';
+    
+    try {
+        const response = await fetch(`/api/${guildId}/submissions/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                submission_id: id,
+                reason: reason
+            })
+        });
+        
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Не удалось отклонить заявку');
+        }
+        
+        showNotification('Заявка отклонена', 'success');
+        loadPendingSubmissions();
+        
+    } catch (error) {
+        showNotification(`Ошибка: ${error.message}`, 'error');
+    }
+}
+
+function approveSubmissionModal() {
+    if (currentSubmissionId) {
+        bootstrap.Modal.getInstance(document.getElementById('submissionModal')).hide();
+        approveSubmission(currentSubmissionId);
+    }
+}
+
+function rejectSubmissionModal() {
+    if (currentSubmissionId) {
+        bootstrap.Modal.getInstance(document.getElementById('submissionModal')).hide();
+        rejectSubmission(currentSubmissionId);
+    }
+}
+
+function getStatusBadge(status) {
+    switch(status) {
+        case 'pending':
+            return '<span class="badge bg-warning">Ожидает</span>';
+        case 'approved':
+            return '<span class="badge bg-success">Одобрено</span>';
+        case 'rejected':
+            return '<span class="badge bg-danger">Отклонено</span>';
+        default:
+            return '<span class="badge bg-secondary">Неизвестно</span>';
+    }
+}
+
+function filterSubmissions() {
+    const filterStatus = document.getElementById('filterStatus').value;
+    if (filterStatus === 'all') {
+        loadSubmissions();
+    } else {
+        loadSubmissions(filterStatus);
+    }
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+    
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i class="fas ${icon} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
+}
+
+// Загружаем все заявки при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadSubmissions(); // Загружаем все заявки
+});
+
+// Автообновление каждые 30 секунд
+setInterval(() => loadSubmissions(), 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Ошибка сервера - Discord Bot Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card text-center">
+                <div class="card-body py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-exclamation-triangle fa-4x text-warning"></i>
+                    </div>
+                    <h1 class="text-warning mb-3">500</h1>
+                    <h3 class="mb-3">Внутренняя ошибка сервера</h3>
+                    <p class="text-muted mb-4">
+                        Произошла непредвиденная ошибка на сервере.<br>
+                        Мы работаем над её устранением.
+                    </p>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>На главную
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="window.history.back()">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </button>
+                        <button class="btn btn-outline-info" onclick="window.location.reload()">
+                            <i class="fas fa-redo me-2"></i>Обновить
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-top">
+                        <small class="text-muted">
+                            Если проблема повторяется, обратитесь к администратору
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

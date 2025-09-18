@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Редактировать событие{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <a href="{{ url_for('event_details', guild_id=guild.id, event_id=event_id) }}" class="btn btn-outline-secondary me-2"><i class="fas fa-arrow-left"></i></a>
+  <h3 class="mb-0">Редактирование события</h3>
+</div>
+<form method="post">
+  <div class="card"><div class="card-body">
+    <div class="mb-3">
+      <label class="form-label">Название</label>
+      <input class="form-control" name="title" value="{{ event.title }}" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Описание</label>
+      <textarea class="form-control" name="description" rows="4">{{ event.description }}</textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Время</label>
+      <input class="form-control" name="time" value="{{ event.time }}" placeholder="Напр. 20:00 или Завтра в 19:00">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Роли (по одной в строке)</label>
+      <textarea class="form-control" name="roles" rows="8">{{ roles_text }}</textarea>
+      <div class="form-check mt-1">
+        <input class="form-check-input" type="checkbox" id="reset_roles" name="reset_roles">
+        <label class="form-check-label" for="reset_roles">Сбросить назначения участников</label>
+      </div>
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+      <a href="{{ url_for('event_details', guild_id=guild.id, event_id=event_id) }}" class="btn btn-outline-secondary">Отмена</a>
+      <button class="btn btn-primary" type="submit">Сохранить</button>
+    </div>
+  </div></div>
+</form>
+{% endblock %}

@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки {{ guild.name }} - Discord Bot Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            {% if guild.icon %}
+            <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" 
+                 alt="{{ guild.name }}" class="rounded me-3" width="48" height="48">
+            {% endif %}
+            <div>
+                <h2 class="mb-0">Настройки {{ guild.name }}</h2>
+                <small class="text-muted">ID: {{ guild.id }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('update_guild_settings', guild_id=guild.id) }}">
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Роли</h5>
+                    {% if settings.event_creator_role or settings.moderator_role or settings.ping_role %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>Настроено
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Требует настройки
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="event_creator_role" class="form-label">
+                            Роль создателя событий
+                            {% if settings.event_creator_role %}
+                                <i class="fas fa-check-circle text-success ms-1"></i>
+                            {% endif %}
+                        </label>
+                        <select class="form-select {% if settings.event_creator_role %}border-success{% endif %}" 
+                                id="event_creator_role" name="event_creator_role">
+                            <option value="">Не выбрано</option>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}" 
+                                {% if (settings.event_creator_role|default(0)|int) == (role.id|int) %}selected{% endif %}>
+                                {{ role.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Роль, которая может создавать события</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="moderator_role" class="form-label">Роль модератора</label>
+                        <select class="form-select" id="moderator_role" name="moderator_role">
+                            <option value="">Не выбрано</option>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}" 
+                                {% if (settings.moderator_role|default(0)|int) == (role.id|int) %}selected{% endif %}>
+                                {{ role.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Роль с расширенными правами модерации</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ping_role" class="form-label">Роль для уведомлений</label>
+                        <select class="form-select" id="ping_role" name="ping_role">
+                            <option value="everyone" 
+                                {% if settings.ping_role == "everyone" %}selected{% endif %}>
+                                @everyone
+                            </option>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}" 
+                                {% if settings.ping_role != 'everyone' and (settings.ping_role|int) == (role.id|int) %}selected{% endif %}>
+                                {{ role.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Кого пинговать при создании событий</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-hashtag me-2"></i>Каналы</h5>
+                    {% if settings.monitored_channels %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>{{ settings.monitored_channels|length }} каналов
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-minus-circle me-1"></i>Не настроено
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Отслеживаемые каналы</label>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            {# Страховка: если по каким-то причинам ключа нет, подставим пустой список #}
+                            {# Безопасно: settings.monitored_channels всегда есть из дефолтов #}
+                            {% for channel in channels %}
+                            <div class="form-check">
+                    <input class="form-check-input" type="checkbox" 
+                        value="{{ channel.id }}" name="monitored_channels"
+                        id="channel_{{ channel.id }}"
+                        {% if (channel.id|int) in (settings.monitored_channels or []) or (channel.id|string) in (settings.monitored_channels or []) %}checked{% endif %}>
+                                <label class="form-check-label" for="channel_{{ channel.id }}">
+                                    # {{ channel.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">Каналы для мониторинга активности</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-toggle-on me-2"></i>Функции</h5>
+                    {% set enabled_count = (settings.monitoring_enabled | default(false) | int) + (settings.cleanup_enabled | default(false) | int) + (settings.reminders_enabled | default(false) | int) %}
+                    {% if enabled_count > 0 %}
+                        <span class="badge bg-info">
+                            <i class="fas fa-cog me-1"></i>{{ enabled_count }}/3 активно
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-power-off me-1"></i>Отключено
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="monitoring_enabled" name="monitoring_enabled"
+                                       {% if settings.monitoring_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="monitoring_enabled">
+                                    <strong>Мониторинг каналов</strong>
+                                </label>
+                                <div class="form-text">Отслеживание активности в каналах</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="cleanup_enabled" name="cleanup_enabled"
+                                       {% if settings.cleanup_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="cleanup_enabled">
+                                    <strong>Автоочистка</strong>
+                                </label>
+                                <div class="form-text">Автоматическая очистка сообщений</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="reminders_enabled" name="reminders_enabled"
+                                       {% if settings.reminders_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="reminders_enabled">
+                                    <strong>Напоминания</strong>
+                                </label>
+                                <div class="form-text">Уведомления перед событием</div>
+                            </div>
+                            <div class="mt-2">
+                                <label for="reminder_time" class="form-label">За сколько напоминать</label>
+                    <input type="time" class="form-control" id="reminder_time" name="reminder_time" 
+                        value="{{ '%02d:%02d'|format((settings.reminder_time|default([0,15]))[0]|int, (settings.reminder_time|default([0,15]))[1]|int) }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recruit Bot Settings -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Настройки рекрутинга и очков</h5>
+                    {% set recruit_configured = settings.recruit_settings and (settings.recruit_settings.default_role or settings.recruit_settings.recruit_role) %}
+                    {% if recruit_configured %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>Настроено
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Требует настройки
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Основные роли</h6>
+                            
+                            <div class="mb-3">
+                                <label for="recruit_default_role" class="form-label">Роль по умолчанию</label>
+                                <select class="form-select" id="recruit_default_role" name="recruit_default_role">
+                                    <option value="">Не выбрано</option>
+                                    {% for role in roles %}
+                                    <option value="{{ role.id }}" 
+                                        {% if settings.recruit_settings and (settings.recruit_settings.default_role|default(0)|int) == (role.id|int) %}selected{% endif %}>
+                                        {{ role.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Роль, которая выдается новым членам</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_recruit_role" class="form-label">Роль рекрута</label>
+                                <select class="form-select" id="recruit_recruit_role" name="recruit_recruit_role">
+                                    <option value="">Не выбрано</option>
+                                    {% for role in roles %}
+                                    <option value="{{ role.id }}" 
+                                        {% if settings.recruit_settings and (settings.recruit_settings.recruit_role|default(0)|int) == (role.id|int) %}selected{% endif %}>
+                                        {{ role.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Роль для рекрутов</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_guild_name" class="form-label">Название гильдии в Albion</label>
+                                <input type="text" class="form-control" id="recruit_guild_name" name="recruit_guild_name" 
+                                       value="{{ settings.recruit_settings.guild_name|default('') }}" 
+                                       placeholder="Название вашей гильдии в Albion Online">
+                                <div class="form-text">Название гильдии для проверки игроков в Albion Online</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_cooldown_hours" class="form-label">Кулдаун заявок (часы)</label>
+                                <input type="number" class="form-control" id="recruit_cooldown_hours" name="recruit_cooldown_hours" 
+                                       value="{{ settings.recruit_settings.cooldown_hours|default(1) }}" 
+                                       min="0" max="168">
+                                <div class="form-text">Время между заявками одного игрока (0 = без ограничений)</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Модераторы и каналы</h6>
+                            
+                            <div class="mb-3">
+                                <label for="recruit_moderator_roles" class="form-label">Роли модераторов очков</label>
+                                <div style="max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.375rem;">
+                                    {% set selected_moderator_roles = settings.recruit_settings.points_moderator_roles.split(',') if settings.recruit_settings and settings.recruit_settings.points_moderator_roles else [] %}
+                                    {% for role in roles %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               value="{{ role.id }}" name="recruit_moderator_roles"
+                                               id="mod_role_{{ role.id }}"
+                                               {% if (role.id|string) in selected_moderator_roles %}checked{% endif %}>
+                                        <label class="form-check-label" for="mod_role_{{ role.id }}">
+                                            {{ role.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text">Роли, которые могут одобрять заявки на очки</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_recruiter_roles" class="form-label">Роли рекрутеров</label>
+                                <div style="max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.375rem;">
+                                    {% set selected_recruiter_roles = settings.recruit_settings.recruiter_roles.split(',') if settings.recruit_settings and settings.recruit_settings.recruiter_roles else [] %}
+                                    {% for role in roles %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               value="{{ role.id }}" name="recruit_recruiter_roles"
+                                               id="recruiter_role_{{ role.id }}"
+                                               {% if (role.id|string) in selected_recruiter_roles %}checked{% endif %}>
+                                        <label class="form-check-label" for="recruiter_role_{{ role.id }}">
+                                            {{ role.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text">Роли, которые могут обрабатывать заявки рекрутов</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_events_channel" class="form-label">Канал событий</label>
+                                <select class="form-select" id="recruit_events_channel" name="recruit_events_channel">
+                                    <option value="">Не выбрано</option>
+                                    {% for channel in channels %}
+                                    <option value="{{ channel.id }}" 
+                                        {% if settings.recruit_settings and (settings.recruit_settings.events_channel|default(0)|int) == (channel.id|int) %}selected{% endif %}>
+                                        # {{ channel.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Канал для заявок на события</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_shop_channel" class="form-label">Канал магазина</label>
+                                <select class="form-select" id="recruit_shop_channel" name="recruit_shop_channel">
+                                    <option value="">Не выбрано</option>
+                                    {% for channel in channels %}
+                                    <option value="{{ channel.id }}" 
+                                        {% if settings.recruit_settings and (settings.recruit_settings.shop_channel|default(0)|int) == (channel.id|int) %}selected{% endif %}>
+                                        # {{ channel.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Канал для покупок в магазине</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_forum_channel" class="form-label">Канал-форум заявок в гильдию</label>
+                                <select class="form-select" id="recruit_forum_channel" name="recruit_forum_channel">
+                                    <option value="">Не выбрано</option>
+                                    {% for channel in forum_channels %}
+                                    <option value="{{ channel.id }}" 
+                                        {% if settings.recruit_settings and (settings.recruit_settings.forum_channel|default(0)|int) == (channel.id|int) %}selected{% endif %}>
+                                        📋 {{ channel.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Форум где создаются заявки на вступление в гильдию</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_points_panel_channel" class="form-label">Канал панели очков</label>
+                                <select class="form-select" id="recruit_points_panel_channel" name="recruit_points_panel_channel">
+                                    <option value="">Не выбрано</option>
+                                    {% for channel in channels %}
+                                    <option value="{{ channel.id }}" 
+                                        {% if settings.recruit_settings and (settings.recruit_settings.points_panel_channel|default(0)|int) == (channel.id|int) %}selected{% endif %}>
+                                        # {{ channel.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Канал где размещается панель для подачи заявок на очки</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recruit_recruit_panel_channel" class="form-label">Канал панели рекрутинга</label>
+                                <select class="form-select" id="recruit_recruit_panel_channel" name="recruit_recruit_panel_channel">
+                                    <option value="">Не выбрано</option>
+                                    {% for channel in channels %}
+                                    <option value="{{ channel.id }}" 
+                                        {% if settings.recruit_settings and (settings.recruit_settings.recruit_panel_channel|default(0)|int) == (channel.id|int) %}selected{% endif %}>
+                                        # {{ channel.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Канал где размещается кнопка подачи заявки в гильдию</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки размещения панелей -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3">Размещение панелей</h6>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Управление панелями:</strong> После настройки каналов используйте кнопки ниже для размещения панелей в указанных каналах.
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-user-plus fa-2x text-primary mb-2"></i>
+                                            <h6 class="card-title">Панель набора</h6>
+                                            <p class="card-text small">Кнопка подачи заявки на прием в гильдию</p>
+                                            <button type="button" class="btn btn-primary btn-sm" onclick="deployPanel('recruit')" 
+                                                    {% if not settings.recruit_settings or not settings.recruit_settings.recruit_panel_channel %}disabled{% endif %}>
+                                                <i class="fas fa-rocket me-1"></i>Разместить
+                                            </button>
+                                            {% if not settings.recruit_settings or not settings.recruit_settings.recruit_panel_channel %}
+                                            <div class="text-muted small mt-1">Канал не настроен</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                                            <h6 class="card-title">Панель очков</h6>
+                                            <p class="card-text small">Кнопка подачи заявки на выдачу очков</p>
+                                            <button type="button" class="btn btn-warning btn-sm" onclick="deployPanel('points')" 
+                                                    {% if not settings.recruit_settings or not settings.recruit_settings.points_panel_channel %}disabled{% endif %}>
+                                                <i class="fas fa-rocket me-1"></i>Разместить
+                                            </button>
+                                            {% if not settings.recruit_settings or not settings.recruit_settings.points_panel_channel %}
+                                            <div class="text-muted small mt-1">Канал не настроен</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-layer-group fa-2x text-success mb-2"></i>
+                                            <h6 class="card-title">Обе панели</h6>
+                                            <p class="card-text small">Разместить панель набора и очков</p>
+                                            <button type="button" class="btn btn-success btn-sm" onclick="deployPanel('both')" 
+                                                    {% if not settings.recruit_settings or (not settings.recruit_settings.recruit_panel_channel and not settings.recruit_settings.points_panel_channel) %}disabled{% endif %}>
+                                                <i class="fas fa-rocket me-1"></i>Разместить все
+                                            </button>
+                                            {% if not settings.recruit_settings or (not settings.recruit_settings.recruit_panel_channel and not settings.recruit_settings.points_panel_channel) %}
+                                            <div class="text-muted small mt-1">Каналы не настроены</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3">Период начисления очков</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="recruit_points_start_date" class="form-label">Дата начала</label>
+                                        <input type="date" class="form-control" id="recruit_points_start_date" name="recruit_points_start_date" 
+                                               value="{{ settings.recruit_settings.points_start_date|default('') }}">
+                                        <div class="form-text">Начало периода начисления очков</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="recruit_points_end_date" class="form-label">Дата окончания</label>
+                                        <input type="date" class="form-control" id="recruit_points_end_date" name="recruit_points_end_date" 
+                                               value="{{ settings.recruit_settings.points_end_date|default('') }}">
+                                        <div class="form-text">Окончание периода начисления очков</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Отмена
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Сохранить настройки
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+async function deployPanel(panelType) {
+    const guildId = '{{ guild.id }}';
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Показываем загрузку
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Размещение...';
+    
+    try {
+        const response = await fetch(`/api/guild/${guildId}/deploy-panels`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                panel_type: panelType
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Успех
+            button.className = button.className.replace(/btn-\w+/, 'btn-success');
+            button.innerHTML = '<i class="fas fa-check me-1"></i>Размещено!';
+            
+            // Показываем уведомление
+            showNotification(result.message || 'Панели успешно размещены!', 'success');
+            
+            // Возвращаем кнопку через 3 секунды
+            setTimeout(() => {
+                button.className = button.className.replace('btn-success', getOriginalButtonClass(panelType));
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 3000);
+        } else {
+            // Ошибка
+            button.className = button.className.replace(/btn-\w+/, 'btn-danger');
+            button.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Ошибка';
+            
+            // Показываем сообщение об ошибке
+            showNotification(result.message || 'Ошибка размещения панелей', 'error');
+            
+            // Возвращаем кнопку через 3 секунды
+            setTimeout(() => {
+                button.className = button.className.replace('btn-danger', getOriginalButtonClass(panelType));
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('Ошибка при размещении панели:', error);
+        
+        button.className = button.className.replace(/btn-\w+/, 'btn-danger');
+        button.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Ошибка';
+        
+        showNotification('Ошибка соединения с сервером', 'error');
+        
+        setTimeout(() => {
+            button.className = button.className.replace('btn-danger', getOriginalButtonClass(panelType));
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 3000);
+    }
+}
+
+function getOriginalButtonClass(panelType) {
+    switch (panelType) {
+        case 'recruit': return 'btn-primary';
+        case 'points': return 'btn-warning';
+        case 'both': return 'btn-success';
+        default: return 'btn-primary';
+    }
+}
+
+function showNotification(message, type) {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Автоматически убираем через 5 секунд
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+
+{% endblock %}

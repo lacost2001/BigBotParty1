@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}События {{ guild.name }} - Discord Bot Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            {% if guild.icon %}
+            <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" 
+                 alt="{{ guild.name }}" class="rounded me-3" width="48" height="48">
+            {% endif %}
+            <div>
+                <h2 class="mb-0">События {{ guild.name }}</h2>
+                <small class="text-muted">Создание новых событий</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Данные шаблонов для JavaScript -->
+<script type="application/json" id="templates-data">{{ templates|tojson|safe }}</script>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-calendar-plus me-2"></i>Создать событие</h5>
+            </div>
+            <div class="card-body">
+                <form id="createEventForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="channel_id" class="form-label">Канал *</label>
+                            <select class="form-select" id="channel_id" name="channel_id" required>
+                                <option value="">Выберите канал</option>
+                                {% for channel in channels %}
+                                <option value="{{ channel.id }}"># {{ channel.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="template_select" class="form-label">Шаблон (опционально)</label>
+                            <select class="form-select" id="template_select" onchange="loadTemplate()">
+                                <option value="">Создать с нуля</option>
+                                {% for template_name in templates.keys() %}
+                                <option value="{{ template_name }}">{{ template_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Название события *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Описание</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="time" class="form-label">Время события</label>
+                        <input type="text" class="form-control" id="time" name="time" 
+                               placeholder="Например: 20:00 или Завтра в 19:00">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="roles" class="form-label">Роли участников *</label>
+                        <textarea class="form-control" id="roles" name="roles" rows="6" required
+                                  placeholder="Каждая роль с новой строки&#10;Например:&#10;Танк&#10;Лекарь&#10;ДД 1&#10;ДД 2"></textarea>
+                        <div class="form-text">Укажите роли для участников, каждая с новой строки</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i class="fas fa-undo me-2"></i>Очистить
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-calendar-plus me-2"></i>Создать событие
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Информация</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="text-primary">Как создать событие:</h6>
+                    <ol class="small">
+                        <li>Выберите канал для размещения</li>
+                        <li>Заполните название и описание</li>
+                        <li>Укажите роли участников</li>
+                        <li>Нажмите "Создать событие"</li>
+                    </ol>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="text-info">Использование шаблонов:</h6>
+                    <p class="small text-muted">
+                        Выберите шаблон из списка, чтобы автоматически заполнить поля
+                    </p>
+                </div>
+
+                <div class="alert alert-warning">
+                    <small>
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Событие будет создано от вашего имени в выбранном канале
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        {% if templates %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>Доступные шаблоны</h6>
+            </div>
+            <div class="card-body">
+                {% for template_name, template_data in templates.items() %}
+                <div class="mb-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm w-100 text-start" 
+                            onclick="loadSpecificTemplate('{{ template_name }}')">
+                        <strong>{{ template_name }}</strong><br>
+                        <small class="text-muted">{{ template_data.roles|length }} ролей</small>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Активные события</h6>
+                <span class="badge bg-success">{{ active_events|length if active_events else 0 }}</span>
+            </div>
+            <div class="card-body">
+                {% if active_events %}
+                    <ul class="list-group list-group-flush">
+                        {% for ev in active_events %}
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-center event-row">
+                                <div class="event-info">
+                                    <div class="fw-semibold">{{ ev.title or 'Без названия' }}</div>
+                                    <div class="text-muted small">ID: {{ ev.id }}</div>
+                                </div>
+                                <div class="btn-group event-actions">
+                                    <a class="btn btn-sm btn-outline-primary" target="_blank"
+                                       href="https://discord.com/channels/{{ guild.id }}/{{ ev.channel_id }}/{{ ev.id }}">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-dark" title="Детали"
+                                       href="{{ url_for('event_details', guild_id=guild.id, event_id=ev.id) }}">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-secondary" title="Редактировать"
+                                       href="{{ url_for('event_edit', guild_id=guild.id, event_id=ev.id) }}">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="copyLink('{{ guild.id }}','{{ ev.channel_id }}','{{ ev.id }}')">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                    <!-- Под управление можно повесить будущие действия -->
+                                    <button class="btn btn-sm btn-outline-warning" onclick="stopEvent('{{ ev.id }}')" title="Остановить">
+                                        <i class="fas fa-stop"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="remindEvent('{{ ev.id }}')" title="Напомнить">
+                                        <i class="fas fa-bullhorn"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-muted">Нет активных событий</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-history me-2"></i>Недавние события</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_events %}
+                    <ul class="list-group list-group-flush">
+                        {% for ev in recent_events %}
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-center event-row">
+                                <div class="event-info">
+                                    <div class="fw-semibold">{{ ev.title or 'Без названия' }}</div>
+                                    <div class="text-muted small">ID: {{ ev.id }}</div>
+                                </div>
+                                <div class="btn-group event-actions">
+                                    <a class="btn btn-sm btn-outline-primary" target="_blank"
+                                       href="https://discord.com/channels/{{ guild.id }}/{{ ev.channel_id }}/{{ ev.id }}">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-dark" title="Детали"
+                                       href="{{ url_for('event_details', guild_id=guild.id, event_id=ev.id) }}">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-secondary" title="Редактировать"
+                                       href="{{ url_for('event_edit', guild_id=guild.id, event_id=ev.id) }}">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="copyLink('{{ guild.id }}','{{ ev.channel_id }}','{{ ev.id }}')">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="cloneEvent('{{ ev.id }}')" title="Клонировать">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-muted">История пуста</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast для уведомлений -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="eventToast" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="fas fa-check-circle text-success me-2"></i>
+            <strong class="me-auto">Событие создано</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastBody">
+            Событие успешно создано!
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Данные шаблонов (определяются через data-атрибут)
+const templatesData = document.getElementById('templates-data');
+const templates = templatesData ? JSON.parse(templatesData.textContent) : {};
+
+function loadTemplate() {
+    const templateSelect = document.getElementById('template_select');
+    const templateName = templateSelect.value;
+    
+    if (templateName && templates[templateName]) {
+        loadSpecificTemplate(templateName);
+    }
+}
+
+function loadSpecificTemplate(templateName) {
+    const template = templates[templateName];
+    if (template) {
+        document.getElementById('title').value = template.title;
+        document.getElementById('description').value = template.description || '';
+        document.getElementById('roles').value = template.roles.join('\n');
+        document.getElementById('template_select').value = templateName;
+    }
+}
+
+function resetForm() {
+    document.getElementById('createEventForm').reset();
+    document.getElementById('template_select').value = '';
+}
+
+document.getElementById('createEventForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Показываем loading состояние
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Создание...';
+    
+    const formData = {
+        channel_id: document.getElementById('channel_id').value,
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        time: document.getElementById('time').value,
+        roles: document.getElementById('roles').value.split('\n').filter(r => r.trim())
+    };
+    
+    try {
+        const response = await fetch('{{ url_for("create_event_web", guild_id=guild.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Показываем успешное уведомление
+            const toastBody = document.getElementById('toastBody');
+            toastBody.innerHTML = `Событие создано! <a href="${result.message_url}" target="_blank">Перейти к событию</a>`;
+            
+            const toast = new bootstrap.Toast(document.getElementById('eventToast'));
+            toast.show();
+            
+            // Очищаем форму
+            resetForm();
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+    } catch (error) {
+        alert('Ошибка создания события: ' + error.message);
+    } finally {
+        // Восстанавливаем кнопку
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// Загружаем шаблон из URL параметров если есть
+const urlParams = new URLSearchParams(window.location.search);
+const templateParam = urlParams.get('template');
+if (templateParam) {
+    loadSpecificTemplate(templateParam);
+}
+
+function copyLink(gid, cid, mid) {
+    const url = `https://discord.com/channels/${gid}/${cid}/${mid}`;
+    navigator.clipboard.writeText(url).then(() => {
+        const toast = new bootstrap.Toast(document.getElementById('eventToast'));
+        document.getElementById('toastBody').textContent = 'Ссылка скопирована в буфер обмена';
+        toast.show();
+    });
+}
+
+async function stopEvent(id) {
+    try {
+        const r = await fetch('{{ url_for("stop_event_web", guild_id=guild.id, event_id="__ID__") }}'.replace('__ID__', id), { method: 'POST' });
+        const data = await r.json();
+        const toast = new bootstrap.Toast(document.getElementById('eventToast'));
+        document.getElementById('toastBody').textContent = data.success ? 'Ивент остановлен' : ('Ошибка: ' + (data.error || 'Не удалось остановить'));
+        toast.show();
+        if (data.success) setTimeout(() => location.reload(), 700);
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+    }
+}
+
+async function remindEvent(id) {
+    try {
+        const r = await fetch('{{ url_for("remind_event_web", guild_id=guild.id, event_id="__ID__") }}'.replace('__ID__', id), { method: 'POST' });
+        const data = await r.json();
+        const toast = new bootstrap.Toast(document.getElementById('eventToast'));
+        document.getElementById('toastBody').textContent = data.message || (data.success ? 'Напоминание отправлено' : ('Ошибка: ' + (data.error || 'Не удалось отправить напоминание')));
+        toast.show();
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+    }
+}
+
+async function cloneEvent(id) {
+    try {
+        const r = await fetch('{{ url_for("clone_event_web", guild_id=guild.id, event_id="__ID__") }}'.replace('__ID__', id), { method: 'POST' });
+        const data = await r.json();
+        if (data.success) {
+            const toast = new bootstrap.Toast(document.getElementById('eventToast'));
+            document.getElementById('toastBody').innerHTML = `Копия создана: <a href="${data.event.url}" target="_blank">Открыть</a>`;
+            toast.show();
+        } else {
+            alert('Ошибка: ' + (data.error || 'Не удалось клонировать'));
+        }
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

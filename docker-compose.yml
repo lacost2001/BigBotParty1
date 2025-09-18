@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  bigbot:
+    build: .
+    container_name: bigbot
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
+    environment:
+      - WEB_BASE_URL=http://localhost:8082
+    networks:
+      - bigbot-network
+
+networks:
+  bigbot-network:
+    driver: bridge
+
+volumes:
+  bigbot-data:

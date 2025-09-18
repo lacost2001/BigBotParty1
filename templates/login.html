@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Вход - Discord Bot Management{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header text-center">
+                <h4><i class="fab fa-discord me-2"></i>Авторизация</h4>
+            </div>
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fab fa-discord" style="font-size: 4rem; color: #5865F2;"></i>
+                </div>
+                <h5 class="mb-3">Войдите через Discord</h5>
+                <p class="text-muted mb-4">
+                    Для управления ботом необходимо войти через Discord аккаунт
+                </p>
+                <a href="{{ url_for('login') }}" class="btn btn-discord btn-lg w-100">
+                    <i class="fab fa-discord me-2"></i>
+                    Войти через Discord
+                </a>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-info-circle me-2 text-info"></i>Требования
+                </h6>
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Права администратора на сервере
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Бот должен быть добавлен на сервер
+                    </li>
+                    <li>
+                        <i class="fas fa-check text-success me-2"></i>
+                        Права "Управление сервером"
+                    </li>
+                    <li class="mt-3">
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('setup_instructions') }}" class="btn btn-outline-info btn-sm flex-fill">
+                                <i class="fas fa-cog me-2"></i>Инструкция
+                            </a>
+                            <a href="{{ url_for('debug_info') }}" class="btn btn-outline-secondary btn-sm flex-fill">
+                                <i class="fas fa-bug me-2"></i>Диагностика
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

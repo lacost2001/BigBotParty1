@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Событие {{ event.title if event else 'не найдено' }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <a href="{{ url_for('guild_events', guild_id=guild.id) }}" class="btn btn-outline-secondary me-2"><i class="fas fa-arrow-left"></i></a>
+  {% if guild.icon %}
+  <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" width="40" height="40" class="rounded me-2">
+  {% endif %}
+  <h3 class="mb-0">Детали события</h3>
+</div>
+{% if not_found %}
+<div class="alert alert-danger">Событие не найдено</div>
+{% else %}
+<div class="card mb-3"><div class="card-body">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <div class="h4 mb-1">{{ event.title }}</div>
+      <div class="text-muted">ID: {{ event_id }}</div>
+    </div>
+    <div class="btn-group">
+      <a class="btn btn-sm btn-outline-primary" href="{{ jump_url }}" target="_blank"><i class="fas fa-external-link-alt"></i></a>
+      {% if not event.stopped %}
+      <form method="post" action="{{ url_for('stop_event_web', guild_id=guild.id, event_id=event_id) }}" onsubmit="return confirm('Остановить событие?')">
+        <button class="btn btn-sm btn-outline-warning" type="submit"><i class="fas fa-stop"></i></button>
+      </form>
+      {% endif %}
+      <a class="btn btn-sm btn-outline-info" href="{{ url_for('event_edit', guild_id=guild.id, event_id=event_id) }}"><i class="fas fa-edit"></i></a>
+    </div>
+  </div>
+  <hr>
+  <div class="mb-2"><strong>Описание:</strong><br>{{ event.description }}</div>
+  {% if event.time %}
+  <div class="mb-2"><strong>Время:</strong> {{ event.time }}</div>
+  {% endif %}
+  <div>
+    <strong>Роли:</strong>
+    <ol class="mt-2">
+      {% for r in event.party_roles %}
+      <li>{{ r.name }} — {% if r.user_id %}<span class="text-success"><@{{ r.user_id }}></span>{% else %}<span class="text-muted">Свободно</span>{% endif %}</li>
+      {% endfor %}
+    </ol>
+  </div>
+</div></div>
+{% endif %}
+{% endblock %}

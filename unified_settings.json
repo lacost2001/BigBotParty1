@@ -1,0 +1,328 @@
+{
+  "guilds": {
+    "1296438850016772208": {
+      "party": {
+        "event_creator_role": 1296471291062128743,
+        "moderator_role": 1296577272358113382,
+        "ping_role": 1296471291062128743,
+        "monitored_channels": [
+          1296473897570664571
+        ],
+        "monitoring_enabled": false,
+        "cleanup_enabled": false,
+        "reminders_enabled": false,
+        "monitoring_time": [
+          10,
+          20
+        ],
+        "cleanup_time": [
+          0,
+          0
+        ],
+        "reminder_time": [
+          0,
+          15
+        ],
+        "cleanup_channels": null,
+        "poll_options": [
+          "Ганг",
+          "Голд плиты",
+          "Охота",
+          "Статик",
+          "Чем нибудь."
+        ],
+        "recruit_settings": {
+          "admin_role": null,
+          "moderator_role": null,
+          "points_moderator_roles": "1296471269847470100,1296471290286178415,1335471259424919603",
+          "recruiter_roles": "1296471269847470100,1296577563732213942",
+          "events_channel": "1415762938291032115",
+          "shop_channel": "1415763006352130058",
+          "events_data": null,
+          "points_start_date": "2025-09-10",
+          "points_end_date": "2025-11-14",
+          "default_role": "1335471233223098489",
+          "recruit_role": "1296471291062128743",
+          "guild_name": "Potatos",
+          "cooldown_hours": 0
+        },
+        "event_creator_roles": [
+          123456789,
+          987654321
+        ]
+      },
+      "recruit": {
+        "admin_role": null,
+        "moderator_role": null,
+        "points_moderator_roles": "1296471269847470100,1296471290286178415,1335471259424919603",
+        "recruiter_roles": "1296471269847470100,1296577563732213942",
+        "events_channel": "1415762938291032115",
+        "shop_channel": "1415763006352130058",
+        "events_data": null,
+        "points_start_date": "2025-09-10",
+        "points_end_date": "2025-11-14",
+        "default_role": "1335471233223098489",
+        "recruit_role": "1296471291062128743",
+        "guild_name": "Potatos",
+        "cooldown_hours": 0
+      }
+    },
+    "1353147968609456238": {
+      "party": {
+        "event_creator_role": 1353148048443707392,
+        "moderator_role": 1353148021776580618,
+        "ping_role": "everyone",
+        "monitored_channels": [
+          1397276239076524175
+        ],
+        "monitoring_enabled": false,
+        "cleanup_enabled": false,
+        "reminders_enabled": false,
+        "monitoring_time": [
+          10,
+          20
+        ],
+        "cleanup_time": [
+          0,
+          0
+        ],
+        "reminder_time": [
+          0,
+          15
+        ],
+        "cleanup_channels": null,
+        "poll_options": [
+          "Ганг",
+          "Голд плиты",
+          "Охота",
+          "Статик",
+          "Чем нибудь."
+        ],
+        "recruit_settings": {
+          "admin_role": null,
+          "moderator_role": null,
+          "points_moderator_roles": "1353148021776580618",
+          "recruiter_roles": "1353148021776580618",
+          "events_channel": "1397265417906421812",
+          "shop_channel": "1397266126194610320",
+          "events_data": null,
+          "points_start_date": "",
+          "points_end_date": "",
+          "default_role": "1353147968609456238",
+          "recruit_role": "1353148048443707392",
+          "guild_name": "Star Linx",
+          "cooldown_hours": 1,
+          "forum_channel": "1416889050723389541",
+          "points_panel_channel": "1397266120297418772",
+          "recruit_panel_channel": "1397270165477134388"
+        },
+        "event_creator_roles": [
+          1353148021776580618,
+          1353148048443707392
+        ]
+      },
+      "recruit": {
+        "admin_role": null,
+        "moderator_role": null,
+        "points_moderator_roles": "1353148021776580618",
+        "recruiter_roles": "1353148021776580618",
+        "events_channel": "1397265417906421812",
+        "shop_channel": "1397266126194610320",
+        "events_data": null,
+        "points_start_date": "",
+        "points_end_date": "",
+        "default_role": "1353147968609456238",
+        "recruit_role": "1353148048443707392",
+        "guild_name": "Star Linx",
+        "cooldown_hours": 1,
+        "forum_channel": "1416889050723389541",
+        "points_panel_channel": "1397266120297418772",
+        "recruit_panel_channel": "1397270165477134388"
+      }
+    },
+    "1396505044475711588": {
+      "party": {
+        "event_creator_role": null,
+        "moderator_role": null,
+        "ping_role": "everyone",
+        "monitored_channels": [],
+        "monitoring_enabled": true,
+        "cleanup_enabled": true,
+        "reminders_enabled": false,
+        "monitoring_time": [
+          10,
+          20
+        ],
+        "cleanup_time": [
+          0,
+          0
+        ],
+        "reminder_time": [
+          0,
+          15
+        ],
+        "cleanup_channels": null,
+        "poll_options": [
+          "Ганг",
+          "Голд плиты",
+          "Охота",
+          "Статик",
+          "Чем нибудь."
+        ]
+      },
+      "recruit": {
+        "admin_role": null,
+        "moderator_role": null,
+        "points_moderator_roles": "",
+        "recruiter_roles": "",
+        "events_channel": null,
+        "shop_channel": null,
+        "events_data": null,
+        "points_start_date": "",
+        "points_end_date": "",
+        "default_role": null,
+        "recruit_role": null,
+        "guild_name": "",
+        "cooldown_hours": 1
+      }
+    },
+    "123456789": {
+      "party": {
+        "event_creator_role": null,
+        "moderator_role": null,
+        "ping_role": "everyone",
+        "monitored_channels": [],
+        "monitoring_enabled": true,
+        "cleanup_enabled": true,
+        "reminders_enabled": false,
+        "monitoring_time": [
+          10,
+          20
+        ],
+        "cleanup_time": [
+          0,
+          0
+        ],
+        "reminder_time": [
+          0,
+          15
+        ],
+        "cleanup_channels": null,
+        "poll_options": [
+          "Ганг",
+          "Голд плиты",
+          "Охота",
+          "Статик",
+          "Чем нибудь."
+        ]
+      },
+      "recruit": {
+        "admin_role": null,
+        "moderator_role": null,
+        "points_moderator_roles": null,
+        "recruiter_roles": null,
+        "events_channel": null,
+        "shop_channel": null,
+        "events_data": null,
+        "points_start_date": "2025-09-16",
+        "points_end_date": null,
+        "default_role": null,
+        "recruit_role": null,
+        "guild_name": null,
+        "cooldown_hours": 1
+      }
+    },
+    "987654321": {
+      "party": {
+        "event_creator_role": null,
+        "moderator_role": null,
+        "ping_role": "everyone",
+        "monitored_channels": [],
+        "monitoring_enabled": true,
+        "cleanup_enabled": true,
+        "reminders_enabled": false,
+        "monitoring_time": [
+          10,
+          20
+        ],
+        "cleanup_time": [
+          0,
+          0
+        ],
+        "reminder_time": [
+          0,
+          15
+        ],
+        "cleanup_channels": null,
+        "poll_options": [
+          "Ганг",
+          "Голд плиты",
+          "Охота",
+          "Статик",
+          "Чем нибудь."
+        ]
+      },
+      "recruit": {
+        "admin_role": null,
+        "moderator_role": null,
+        "points_moderator_roles": null,
+        "recruiter_roles": null,
+        "events_channel": null,
+        "shop_channel": null,
+        "events_data": null,
+        "points_start_date": "2024-01-01",
+        "points_end_date": "2024-12-31",
+        "default_role": null,
+        "recruit_role": null,
+        "guild_name": null,
+        "cooldown_hours": 1
+      }
+    },
+    "999999999": {
+      "party": {
+        "event_creator_role": null,
+        "moderator_role": null,
+        "ping_role": "everyone",
+        "monitored_channels": [],
+        "monitoring_enabled": true,
+        "cleanup_enabled": true,
+        "reminders_enabled": false,
+        "monitoring_time": [
+          10,
+          20
+        ],
+        "cleanup_time": [
+          0,
+          0
+        ],
+        "reminder_time": [
+          0,
+          15
+        ],
+        "cleanup_channels": null,
+        "poll_options": [
+          "Ганг",
+          "Голд плиты",
+          "Охота",
+          "Статик",
+          "Чем нибудь."
+        ]
+      },
+      "recruit": {
+        "admin_role": null,
+        "moderator_role": null,
+        "points_moderator_roles": null,
+        "recruiter_roles": null,
+        "events_channel": null,
+        "shop_channel": null,
+        "events_data": null,
+        "points_start_date": "2025-09-10",
+        "points_end_date": "2025-09-12",
+        "default_role": null,
+        "recruit_role": null,
+        "guild_name": null,
+        "cooldown_hours": 1
+      }
+    }
+  }
+}

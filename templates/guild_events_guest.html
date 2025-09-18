@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Создать событие - {{ guild.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card bg-dark text-light">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">🎮 Создать событие</h4>
+                    <span class="badge bg-info">{{ guild.name }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Для участников сервера:</strong> Создайте событие для своей команды или активности. 
+                        Событие будет размещено в выбранном канале с вашим именем как организатора.
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form action="{{ url_for('create_event_guest', guild_id=guild.id) }}" method="post" id="eventForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="channel_id" class="form-label">
+                                    <i class="bi bi-hash"></i> Канал для события *
+                                </label>
+                                <select class="form-select bg-dark text-light border-secondary" id="channel_id" name="channel_id" required>
+                                    <option value="">Выберите канал...</option>
+                                    {% for channel in channels %}
+                                        <option value="{{ channel.id }}">{{ channel.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="template_select" class="form-label">
+                                    <i class="bi bi-lightning"></i> Быстрый шаблон
+                                </label>
+                                <select class="form-select bg-dark text-light border-secondary" id="template_select">
+                                    <option value="">Выберите шаблон (опционально)...</option>
+                                    {% for template_name, template_data in templates.items() %}
+                                        <option value="{{ template_name }}" 
+                                                data-title="{{ template_data.title or template_name }}"
+                                                data-description="{{ template_data.description or '' }}"
+                                                data-roles="{{ template_data.roles | join('\n') if template_data.roles else '' }}">
+                                            {{ template_name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Шаблоны настроены администраторами сервера</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">
+                                <i class="bi bi-type"></i> Название события *
+                            </label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                   id="title" name="title" required maxlength="100"
+                                   placeholder="Например: Рейд в подземелье или Турнир по PvP">
+                            <small class="text-muted">Будет отображаться как: [{{ user.username }}] Ваше название</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="bi bi-card-text"></i> Описание
+                            </label>
+                            <textarea class="form-control bg-dark text-light border-secondary" 
+                                      id="description" name="description" rows="3"
+                                      placeholder="Дополнительная информация о событии, требования, награды..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="time" class="form-label">
+                                <i class="bi bi-clock"></i> Время и дата
+                            </label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                   id="time" name="time"
+                                   placeholder="Например: 20:00, завтра в 15:00, пятница 19:00">
+                            <small class="text-muted">Свободный формат - как вам удобно</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="roles" class="form-label">
+                                <i class="bi bi-people"></i> Роли участников *
+                            </label>
+                            <textarea class="form-control bg-dark text-light border-secondary" 
+                                      id="roles" name="roles" rows="4" required
+                                      placeholder="Танк&#10;Хилер&#10;ДД 1&#10;ДД 2&#10;ДД 3"></textarea>
+                            <small class="text-muted">Каждая роль с новой строки</small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-plus-circle"></i> Создать событие
+                            </button>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад к панели
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Инструкция -->
+            <div class="card bg-dark text-light mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-question-circle"></i> Как это работает</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-1-circle-fill text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Заполните форму</h6>
+                            <p class="small text-muted">Выберите канал, укажите название и роли для участников</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-2-circle-fill text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Событие создастся</h6>
+                            <p class="small text-muted">Бот разместит интерактивное сообщение в выбранном канале</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-3-circle-fill text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Участники регистрируются</h6>
+                            <p class="small text-muted">Игроки нажимают кнопки и занимают роли в вашем событии</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Автозаполнение из шаблонов
+document.getElementById('template_select').addEventListener('change', function() {
+    const option = this.options[this.selectedIndex];
+    if (option.value) {
+        document.getElementById('title').value = option.dataset.title || '';
+        document.getElementById('description').value = option.dataset.description || '';
+        document.getElementById('roles').value = option.dataset.roles || '';
+    }
+});
+
+// Предотвращение повторной отправки формы
+document.getElementById('eventForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Создание...';
+    
+    // Разблокировка через 5 секунд на случай ошибки
+    setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Создать событие';
+    }, 5000);
+});
+</script>
+{% endblock %}

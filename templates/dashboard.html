@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% block title %}Панель управления | Discord Bot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="text-neon mb-1">
+                    <i class="fas fa-tachometer-alt me-3"></i>Панель управления
+                </h1>
+                <p class="text-secondary mb-0">Добро пожаловать, {{ user.username or session.user.username }}!</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="https://discord.com/oauth2/authorize?client_id=1416183475798540368&permissions=8&scope=bot+applications.commands" 
+                   target="_blank" class="btn btn-success">
+                    <i class="fas fa-plus-circle me-2"></i>Добавить бота на сервер
+                </a>
+                <span class="badge bg-success fs-6 online-status">
+                    <i class="fas fa-circle me-1" style="color: #00ff88; animation: pulse 2s infinite;"></i>Онлайн
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Статистика -->
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-server fa-2x text-neon"></i>
+                </div>
+                <h4 class="text-neon">{{ available_guilds|length if available_guilds else 0 }}</h4>
+                <p class="text-secondary mb-0">Доступных серверов</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-plus-circle fa-2x text-warning"></i>
+                </div>
+                <h4 class="text-warning">{{ user_only_guilds|length if user_only_guilds else 0 }}</h4>
+                <p class="text-secondary mb-0">Нужен бот</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-calendar-alt fa-2x text-success"></i>
+                </div>
+                <h4 class="text-success">{{ bot_stats.active_events if bot_stats.active_events else '0' }}</h4>
+                <p class="text-secondary mb-0">Активных событий</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-users fa-2x text-info"></i>
+                </div>
+                <h4 class="text-info">{{ bot_stats.online_members if bot_stats.online_members else '0' }}</h4>
+                <p class="text-secondary mb-0">
+                    Онлайн пользователей
+                    {% if bot_stats.total_members %}
+                        <br><small class="text-muted">из {{ bot_stats.total_members }}</small>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if available_guilds %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    Доступные серверы
+                </h3>
+                <span class="badge bg-success">{{ available_guilds|length }} сервер(ов)</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    {% for guild in available_guilds %}
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card server-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    {% if guild.icon %}
+                                        <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" 
+                                             alt="Server Icon" class="rounded-circle me-3" width="48" height="48">
+                                    {% else %}
+                                        <div class="bg-gradient rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                             style="width: 48px; height: 48px;">
+                                            <i class="fas fa-hashtag text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <h5 class="mb-1">{{ guild.name }}</h5>
+                                        <small class="text-success">
+                                            <i class="fas fa-circle me-1"></i>Бот активен
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <a href="/guild/{{ guild.id }}" class="btn btn-primary">
+                                        <i class="fas fa-cog me-2"></i>Управление сервером
+                                    </a>
+                                    <div class="row g-1">
+                                        <div class="col-6">
+                                            <a href="/guild/{{ guild.id }}/templates" class="btn btn-outline-primary btn-sm w-100">
+                                                <i class="fas fa-file-alt me-1"></i>Шаблоны
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="/guild/{{ guild.id }}/events" class="btn btn-outline-primary btn-sm w-100">
+                                                <i class="fas fa-calendar me-1"></i>События
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="/guild/{{ guild.id }}/events/guest" class="btn btn-success btn-sm w-100">
+                                                <i class="fas fa-plus-circle me-1"></i>Создать событие
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="/guild/{{ guild.id }}/submissions" class="btn btn-outline-success btn-sm w-100">
+                                                <i class="fas fa-user-plus me-1"></i>Заявки
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="/guild/{{ guild.id }}/recruit" class="btn btn-outline-info btn-sm w-100">
+                                                <i class="fas fa-star me-1"></i>Рекрутинг
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="row g-1 mt-1">
+                                        <div class="col-6">
+                                            <a href="/guild/{{ guild.id }}/shop" class="btn btn-outline-warning btn-sm w-100">
+                                                <i class="fas fa-shopping-cart me-1"></i>Магазин
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="/guild/{{ guild.id }}/stats" class="btn btn-outline-secondary btn-sm w-100">
+                                                <i class="fas fa-chart-bar me-1"></i>Статистика
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="/guild/{{ guild.id }}/role-settings" class="btn btn-outline-warning btn-sm w-100">
+                                                <i class="fas fa-users-cog me-1"></i>Настройка ролей событий
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if needs_bot_guilds %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-plus-circle text-warning me-2"></i>
+                    Серверы без бота
+                </h3>
+                <span class="badge bg-warning text-dark">{{ needs_bot_guilds|length }} сервер(ов)</span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Добавьте бота на эти серверы</strong> для получения полного функционала управления событиями и настройками.
+                </div>
+                
+                <div class="row g-4">
+                    {% for guild in needs_bot_guilds %}
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card server-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    {% if guild.icon %}
+                                        <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" 
+                                             alt="Server Icon" class="rounded-circle me-3" width="48" height="48">
+                                    {% else %}
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                             style="width: 48px; height: 48px;">
+                                            <i class="fas fa-hashtag text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <h5 class="mb-1">{{ guild.name }}</h5>
+                                        <small class="text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Бот не добавлен
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <a href="/guild/{{ guild.id }}/invite" class="btn btn-warning">
+                                        <i class="fas fa-plus me-2"></i>Добавить бота
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if not available_guilds and not needs_bot_guilds %}
+<div class="row">
+    <div class="col-12">
+        <div class="card text-center">
+            <div class="card-body py-5">
+                <div class="mb-4">
+                    <i class="fas fa-server fa-4x text-secondary"></i>
+                </div>
+                <h3 class="text-secondary mb-3">Нет доступных серверов</h3>
+                <p class="text-secondary mb-4">
+                    У вас нет серверов с правами администратора или модератора.<br>
+                    Создайте сервер или попросите права администратора на существующем сервере.
+                </p>
+                <a href="https://discord.com/channels/@me" target="_blank" class="btn btn-discord">
+                    <i class="fab fa-discord me-2"></i>Открыть Discord
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Быстрые действия -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-bolt text-warning me-2"></i>
+                    Быстрые действия
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <a href="/admin" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-tools me-2"></i>
+                            Админ-панель
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-success w-100" onclick="refreshStats()">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            Обновить данные
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="https://discord.com/developers/applications" target="_blank" class="btn btn-outline-info w-100">
+                            <i class="fas fa-external-link-alt me-2"></i>
+                            Dev Portal
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-warning w-100" onclick="showHelp()">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Помощь
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshStats() {
+    // Показываем индикатор загрузки
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Обновление...';
+    btn.disabled = true;
+    
+    // Перезагружаем страницу через 1 секунду
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
+function showHelp() {
+    const helpText = `
+    🤖 Панель управления Discord ботом
+    
+    ✅ Доступные серверы - серверы где бот уже добавлен и настроен
+    ⚠️ Серверы без бота - нажмите "Добавить бота" для настройки
+    
+    🔧 Функции:
+    • Управление настройками сервера
+    • Создание и редактирование шаблонов событий  
+    • Создание событий через веб-интерфейс
+    • Просмотр статистики и участников
+    
+    💡 Совет: используйте выпадающий список "Серверы" в навигации для быстрого переключения между серверами.
+    `;
+    
+    alert(helpText);
+}
+
+// Анимация счетчиков при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    const counters = document.querySelectorAll('.card-body h4');
+    counters.forEach(counter => {
+        const target = parseInt(counter.textContent);
+        if (!isNaN(target)) {
+            let current = 0;
+            const increment = target / 20;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    counter.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    counter.textContent = Math.floor(current);
+                }
+            }, 50);
+        }
+    });
+});
+</script>
+{% endblock %}

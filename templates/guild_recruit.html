@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Управление рекрутингом {{ guild.name }} - Discord Bot Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            {% if guild.icon %}
+            <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" 
+                 alt="{{ guild.name }}" class="rounded me-3" width="48" height="48">
+            {% endif %}
+            <div>
+                <h2 class="mb-0">Управление рекрутингом {{ guild.name }}</h2>
+                <small class="text-muted">ID: {{ guild.id }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Заявки на события</h5>
+                        <h3 class="mb-0">{{ submissions|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Покупки в магазине</h5>
+                        <h3 class="mb-0">{{ purchases|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-shopping-cart fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Активных игроков</h5>
+                        <h3 class="mb-0">{{ user_points|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Общие очки</h5>
+                        <h3 class="mb-0">{{ user_points|sum(attribute='total_points')|int }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-star fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Навигационные вкладки -->
+<ul class="nav nav-tabs" id="recruitTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="submissions-tab" data-bs-toggle="tab" data-bs-target="#submissions" 
+                type="button" role="tab" aria-controls="submissions" aria-selected="true">
+            <i class="fas fa-calendar-alt me-2"></i>Заявки на события
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="purchases-tab" data-bs-toggle="tab" data-bs-target="#purchases" 
+                type="button" role="tab" aria-controls="purchases" aria-selected="false">
+            <i class="fas fa-shopping-cart me-2"></i>Покупки в магазине
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" 
+                type="button" role="tab" aria-controls="leaderboard" aria-selected="false">
+            <i class="fas fa-trophy me-2"></i>Таблица лидеров
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" 
+                type="button" role="tab" aria-controls="settings" aria-selected="false">
+            <i class="fas fa-cog me-2"></i>Настройки
+        </button>
+    </li>
+</ul>
+
+<!-- Содержимое вкладок -->
+<div class="tab-content" id="recruitTabsContent">
+    <!-- Заявки на события -->
+    <div class="tab-pane fade show active" id="submissions" role="tabpanel" aria-labelledby="submissions-tab">
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Заявки на события</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadSubmissions()">
+                        <i class="fas fa-sync-alt me-1"></i>Обновить
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if submissions %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Игрок</th>
+                                <th>Тип события</th>
+                                <th>Действие</th>
+                                <th>Участники</th>
+                                <th>Очки</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="submissionsTable">
+                            {% for submission in submissions %}
+                            <tr>
+                                <td>#{{ submission.id }}</td>
+                                <td>{{ submission.submitter_name }}</td>
+                                <td>{{ submission.event_type }}</td>
+                                <td>{{ submission.action }}</td>
+                                <td>{{ submission.group_size }}</td>
+                                <td>{{ submission.base_points }}</td>
+                                <td>
+                                    {% if submission.status == 'pending' %}
+                                        <span class="badge bg-warning">Ожидает</span>
+                                    {% elif submission.status == 'approved' %}
+                                        <span class="badge bg-success">Одобрено</span>
+                                    {% elif submission.status == 'rejected' %}
+                                        <span class="badge bg-danger">Отклонено</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ submission.created_at }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewSubmission({{ submission.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Нет заявок на события</h5>
+                    <p class="text-muted">Заявки будут отображаться здесь после их создания игроками.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Покупки в магазине -->
+    <div class="tab-pane fade" id="purchases" role="tabpanel" aria-labelledby="purchases-tab">
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Покупки в магазине</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadPurchases()">
+                        <i class="fas fa-sync-alt me-1"></i>Обновить
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if purchases %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Игрок</th>
+                                <th>Товар</th>
+                                <th>Стоимость</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchasesTable">
+                            {% for purchase in purchases %}
+                            <tr>
+                                <td>#{{ purchase.id }}</td>
+                                <td>{{ purchase.user_name }}</td>
+                                <td>{{ purchase.item_name }}</td>
+                                <td>{{ purchase.points_cost }} очков</td>
+                                <td>
+                                    {% if purchase.status == 'pending' %}
+                                        <span class="badge bg-warning">Ожидает</span>
+                                    {% elif purchase.status == 'completed' %}
+                                        <span class="badge bg-success">Выполнено</span>
+                                    {% elif purchase.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Отменено</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ purchase.created_at }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewPurchase({{ purchase.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Нет покупок в магазине</h5>
+                    <p class="text-muted">Покупки будут отображаться здесь после их совершения игроками.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица лидеров -->
+    <div class="tab-pane fade" id="leaderboard" role="tabpanel" aria-labelledby="leaderboard-tab">
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Таблица лидеров по очкам</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadLeaderboard()">
+                        <i class="fas fa-sync-alt me-1"></i>Обновить
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if user_points %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Место</th>
+                                <th>Игрок</th>
+                                <th>Общие очки</th>
+                                <th>Участие в событиях</th>
+                                <th>Последнее обновление</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardTable">
+                            {% for user in user_points %}
+                            <tr>
+                                <td>
+                                    {% if loop.index == 1 %}
+                                        <i class="fas fa-crown text-warning me-1"></i>{{ loop.index }}
+                                    {% elif loop.index == 2 %}
+                                        <i class="fas fa-medal text-secondary me-1"></i>{{ loop.index }}
+                                    {% elif loop.index == 3 %}
+                                        <i class="fas fa-medal text-warning me-1"></i>{{ loop.index }}
+                                    {% else %}
+                                        {{ loop.index }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.user_name }}</td>
+                                <td><strong>{{ user.total_points }}</strong></td>
+                                <td>{{ user.events_participated }}</td>
+                                <td>{{ user.last_updated }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Нет данных об очках</h5>
+                    <p class="text-muted">Таблица лидеров будет отображена после начисления очков игрокам.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Настройки -->
+    <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('guild_settings', guild_id=guild.id) }}" class="btn btn-primary">
+                                <i class="fas fa-cog me-2"></i>Настройки рекрутинга
+                            </a>
+                            <button class="btn btn-outline-warning" onclick="resetAllPoints()" 
+                                    data-bs-toggle="tooltip" title="Сбросить очки всех игроков">
+                                <i class="fas fa-undo me-2"></i>Сбросить все очки
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-info" onclick="exportData()" 
+                                    data-bs-toggle="tooltip" title="Экспортировать данные в CSV">
+                                <i class="fas fa-download me-2"></i>Экспорт данных
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="viewStatistics()" 
+                                    data-bs-toggle="tooltip" title="Подробная статистика">
+                                <i class="fas fa-chart-bar me-2"></i>Статистика
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Функции для управления recruitment данными
+function loadSubmissions() {
+    // Здесь можно добавить AJAX запрос для обновления заявок
+    location.reload();
+}
+
+function loadPurchases() {
+    // Здесь можно добавить AJAX запрос для обновления покупок
+    location.reload();
+}
+
+function loadLeaderboard() {
+    // Здесь можно добавить AJAX запрос для обновления таблицы лидеров
+    location.reload();
+}
+
+function viewSubmission(submissionId) {
+    // Открыть модальное окно с деталями заявки
+    alert('Просмотр заявки #' + submissionId + '\n(Функция будет реализована)');
+}
+
+function viewPurchase(purchaseId) {
+    // Открыть модальное окно с деталями покупки
+    alert('Просмотр покупки #' + purchaseId + '\n(Функция будет реализована)');
+}
+
+function resetAllPoints() {
+    if (confirm('Вы уверены, что хотите сбросить очки всех игроков? Это действие нельзя отменить.')) {
+        // Здесь можно добавить AJAX запрос для сброса очков
+        alert('Функция сброса очков будет реализована');
+    }
+}
+
+function exportData() {
+    // Экспорт данных в CSV
+    alert('Функция экспорта данных будет реализована');
+}
+
+function viewStatistics() {
+    // Показать подробную статистику
+    alert('Функция просмотра статистики будет реализована');
+}
+
+// Инициализация подсказок
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

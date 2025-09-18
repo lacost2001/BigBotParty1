@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки ролей событий - {{ guild.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card bg-dark text-light">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">⚙️ Настройка ролей для событий</h4>
+                    <span class="badge bg-info">{{ guild.name }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Управление доступом:</strong> Выберите роли, участники которых смогут создавать и управлять событиями через специальные ссылки.
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form action="{{ url_for('update_guild_role_settings', guild_id=guild.id) }}" method="post" id="roleSettingsForm">
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-people-fill"></i> Роли с правами создания событий
+                            </label>
+                            <div class="card bg-secondary">
+                                <div class="card-body">
+                                    {% if guild_roles %}
+                                        <div class="row g-3">
+                                            {% for role in guild_roles %}
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="role_ids[]" value="{{ role.id }}" 
+                                                           id="role_{{ role.id }}"
+                                                           {% if role.id|int in current_event_roles %}checked{% endif %}>
+                                                    <label class="form-check-label d-flex align-items-center" for="role_{{ role.id }}">
+                                                        <div class="rounded-circle me-2" 
+                                                             style="width: 12px; height: 12px; background-color: #{{ '%06x' % role.color if role.color else '99aab5' }};"></div>
+                                                        {{ role.name }}
+                                                        <small class="text-muted ms-2">({{ role.id }})</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center text-muted">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            Не удалось загрузить роли сервера
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                Участники с выбранными ролями получат доступ к персональным ссылкам для создания событий.
+                            </small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle"></i> Сохранить настройки
+                            </button>
+                            <a href="/guild/{{ guild.id }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад к управлению сервером
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Генерация ссылок -->
+            {% if current_event_roles %}
+            <div class="card bg-dark text-light mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-link-45deg"></i> Ссылки для ролей</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Используйте эти ссылки для предоставления доступа к созданию событий участникам с соответствующими ролями.
+                    </p>
+                    
+                    {% for role in guild_roles %}
+                        {% if role.id|int in current_event_roles %}
+                        <div class="card bg-secondary mb-3">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle me-3" 
+                                             style="width: 16px; height: 16px; background-color: #{{ '%06x' % role.color if role.color else '99aab5' }};"></div>
+                                        <strong>{{ role.name }}</strong>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-primary btn-sm" 
+                                                onclick="copyToClipboard('{{ request.url_root }}guild/{{ guild.id }}/events/role/{{ role.id }}', this)">
+                                            <i class="bi bi-clipboard"></i> Копировать
+                                        </button>
+                                        <a href="/guild/{{ guild.id }}/events/role/{{ role.id }}" 
+                                           class="btn btn-outline-success btn-sm" target="_blank">
+                                            <i class="bi bi-box-arrow-up-right"></i> Открыть
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted font-monospace">
+                                        {{ request.url_root }}guild/{{ guild.id }}/events/role/{{ role.id }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Инструкция -->
+            <div class="card bg-dark text-light mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-question-circle"></i> Как использовать ролевые ссылки</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-1-circle-fill text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Настройте роли</h6>
+                            <p class="small text-muted">Выберите роли, которые должны иметь права создания событий</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-2-circle-fill text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Поделитесь ссылками</h6>
+                            <p class="small text-muted">Отправьте участникам ссылки через Discord или закрепите в каналах</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="bi bi-3-circle-fill text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Управление событиями</h6>
+                            <p class="small text-muted">Участники смогут создавать и управлять своими событиями</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <i class="bi bi-shield-exclamation"></i>
+                        <strong>Безопасность:</strong> Только участники с назначенными ролями смогут использовать ссылки. 
+                        Проверка ролей происходит при каждом доступе.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Временно изменяем текст кнопки
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-check"></i> Скопировано!';
+        button.classList.remove('btn-outline-primary');
+        button.classList.add('btn-success');
+        
+        setTimeout(() => {
+            button.innerHTML = originalHTML;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-primary');
+        }, 2000);
+    }).catch(function(err) {
+        console.error('Ошибка копирования: ', err);
+        // Fallback для старых браузеров
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-check"></i> Скопировано!';
+        setTimeout(() => {
+            button.innerHTML = originalHTML;
+        }, 2000);
+    });
+}
+
+// Предотвращение повторной отправки формы
+document.getElementById('roleSettingsForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Сохранение...';
+});
+</script>
+{% endblock %}

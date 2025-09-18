@@ -1,0 +1,21 @@
+# BigBot Discord Bot Dependencies
+# Core Discord.py and database
+discord.py==2.6.3
+aiosqlite==0.19.0
+PyNaCl==1.5.0
+
+# Web interface
+Flask==3.0.0
+Flask-Session==0.6.0
+Werkzeug==3.0.1
+
+# HTTP and networking
+aiohttp==3.9.1
+requests==2.31.0
+
+# Utilities
+python-dotenv==1.0.0
+
+# Optional: For development
+# pytest==8.4.2
+# pytest-asyncio==0.24.0
