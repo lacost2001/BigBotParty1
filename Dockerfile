@@ -36,4 +36,4 @@ EXPOSE 8082
 # CMD ["gunicorn", "party_bot.web:app", "--bind", "0.0.0.0:${PORT:-8082}"]
 
 # Пример для Discord-бота:
-CMD ["python", "bot_main.py"]
+CMD ["gunicorn", "party_bot.web:app", "--bind", "0.0.0.0:$PORT"]
