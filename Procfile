@@ -1,1 +1,1 @@
-web: gunicorn bot_main:app
+web: gunicorn party_bot.web:app --bind 0.0.0.0:$PORT
